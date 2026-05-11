@@ -114,3 +114,21 @@ Allow an authenticated user to manage their technical domains (e.g., PHP, Larave
 - Use route model binding (`Domain $domain`)
 - Always filter domains by `auth()->id()`
 - Do not generate unnecessary services or repositories
+
+---
+
+## 🔄 Workflow (AI Agent)
+
+Pour chaque composant de cette feature, suivre ce cycle:
+
+1. **Create Branch** - Créer une nouvelle branche pour le composant
+2. **Add Work** - Implémenter le composant (modèle, controller, routes, views, etc.)
+3. **Review** - Soumettre le travail pour review (pas de commit/push)
+4. **Commit & Push** - Après validation, commiter et pousser (sur instruction explicite)
+
+### Branches créées pour cette feature:
+
+- `feature/domain-migration` - ✅ Migration table domains
+- `feature/domain-model` - ✅ Model Domain
+- `feature/domain-routes` - 🔄 Routes & Controller (en cours)
+- `feature/domain-views` - À faire (Blade templates)
