@@ -1,10 +1,19 @@
 @props(['domain'])
 
+@php
+    $color = $domain->color;
+    $r = hexdec(substr($color, 1, 2));
+    $g = hexdec(substr($color, 3, 2));
+    $b = hexdec(substr($color, 5, 2));
+    $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+    $textColor = $luminance > 0.5 ? '#1F2937' : '#FFFFFF';
+@endphp
+
 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
     <div class="p-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="px-3 py-1 rounded-full text-sm font-medium text-white" style="background-color: {{ $domain->color }}">
+                <span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color: {{ $color }}; color: {{ $textColor }};">
                     {{ $domain->name }}
                 </span>
             </div>

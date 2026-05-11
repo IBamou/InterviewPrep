@@ -1,7 +1,5 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+<x-app-layout>
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="mb-6">
         <a href="{{ route('concepts.show', $concept) }}" class="text-indigo-600 hover:text-indigo-900">
             &larr; Back to Concept
@@ -68,4 +66,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-app-layout>

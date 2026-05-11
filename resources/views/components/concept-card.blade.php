@@ -1,12 +1,12 @@
 @props(['concept'])
 
-<div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
     <div class="flex justify-between items-start">
         <div class="flex-1">
-            <a href="{{ route('concepts.show', $concept) }}" class="text-lg font-medium text-gray-900 hover:text-indigo-600">
+            <a href="{{ route('concepts.show', $concept) }}" class="text-lg font-medium text-gray-900 dark:text-gray-100 hover:text-indigo-600">
                 {{ $concept->title }}
             </a>
-            <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ Str::limit($concept->explanation, 100) }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ Str::limit($concept->explanation, 100) }}</p>
         </div>
         <div class="ml-4 flex flex-col items-end gap-2">
             <span class="px-2 py-1 text-xs rounded-full
@@ -25,17 +25,17 @@
     </div>
     <div class="mt-3 flex items-center justify-between">
         <div class="flex gap-2">
-            <a href="{{ route('concepts.show', $concept) }}" class="text-gray-500 hover:text-gray-700 text-sm">
+            <a href="{{ route('concepts.show', $concept) }}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">
                 View
             </a>
-            <a href="{{ route('concepts.edit', $concept) }}" class="text-gray-500 hover:text-gray-700 text-sm">
+            <a href="{{ route('concepts.edit', $concept) }}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">
                 Edit
             </a>
         </div>
         <form action="{{ route('concepts.updateStatus', $concept) }}" method="POST">
             @csrf
             @method('PATCH')
-            <button type="submit" class="text-indigo-600 hover:text-indigo-900 text-sm">
+            <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 text-sm">
                 Next Status
             </button>
         </form>
