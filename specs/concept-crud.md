@@ -60,7 +60,7 @@ Allow an authenticated user to manage concepts within their domains - each conce
 ### Enums (strict values) - Using PHP 8.1+ Enums
 - `difficulty`: 'junior', 'mid', 'senior' (App\Enums\Difficulty)
 - `status`: 'to_review', 'in_progress', 'mastered' (App\Enums\Status)
-- Model uses `AsEnum` casting for automatic conversion
+- Model uses custom `App\Casts\EnumCast` casting for automatic conversion (PHP 8.4 / Laravel 13)
 
 ### Soft Deletes
 - Implement `SoftDeletes` trait on Concept model

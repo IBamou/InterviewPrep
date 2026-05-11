@@ -32,7 +32,8 @@ When implementing the AI generation feature (US11, US12, US13), you MUST adhere 
 - **Security (Multi-tenancy):** Users must only see, edit, and delete their OWN data. Always scope queries to the authenticated user (e.g., `auth()->user()->domains()`).
 - **Enums:** Use strict values for Concept attributes:
   - `difficulty`: 'junior', 'mid', 'senior'
-  - `status`: 'a_revoir', 'en_cours', 'maitrise'
+  - `status`: 'to_review', 'in_progress', 'mastered'
+- **Enum Casting (PHP 8.4):** Use custom `App\Casts\EnumCast` for automatic enum conversion in models
 - **Soft Deletes:** Implement the `SoftDeletes` trait on the `Concept` model.
 - **Specific Schema Requirement:** The `generated_questions` table MUST have a `concept_id` foreign key.
 - **Controllers & Validation:** Keep controllers thin. Use Form Request classes for all validation logic.
