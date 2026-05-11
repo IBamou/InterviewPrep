@@ -6,14 +6,17 @@ use App\Enums\Status;
 use App\Http\Requests\StoreConceptRequest;
 use App\Http\Requests\UpdateConceptRequest;
 use App\Models\Concept;
+use App\Models\Domain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ConceptController extends Controller
 {
-    public function index(Request $request, $domain)
+    public function index(Request $request, Domain $domain)
     {
-        $conceptQuery = Concept::where('domain_id', $domain)
+        $this->authorize('view', $domain);
+
+        $conceptQuery = Concept::where('domain_id', $domain->id)
             ->whereHas('domain', function ($query) {
                 $query->where('user_id', Auth::id());
             });
@@ -31,19 +34,19 @@ class ConceptController extends Controller
         return view('concepts.index', compact('concepts', 'domain'));
     }
 
-    public function create($domain)
+    public function create(Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('view', $domain);
 
         return view('concepts.create', compact('domain'));
     }
 
-    public function store(StoreConceptRequest $request, $domain)
+    public function store(StoreConceptRequest $request, Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('view', $domain);
 
         Concept::create([
-            'domain_id' => $domain,
+            'domain_id' => $domain->id,
             'title' => $request->validated('title'),
             'explanation' => $request->validated('explanation'),
             'difficulty' => $request->validated('difficulty'),
@@ -113,12 +116,12 @@ class ConceptController extends Controller
         return redirect()->route('concepts.archives', $concept->domain_id)->with('success', 'Concept permanently deleted.');
     }
 
-    public function archives($domain)
+    public function archives(Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('view', $domain);
 
         $concepts = Concept::onlyTrashed()
-            ->where('domain_id', $domain)
+            ->where('domain_id', $domain->id)
             ->whereHas('domain', function ($query) {
                 $query->where('user_id', Auth::id());
             })
@@ -136,13 +139,5 @@ class ConceptController extends Controller
     {
         // Placeholder for Groq API integration
         // Will be implemented in a future branch
-    }
-
-    private function authorizeDomain($domain): void
-    {
-        $domainModel = \App\Models\Domain::findOrFail($domain);
-        if ($domainModel->user_id !== Auth::id()) {
-            abort(403);
-        }
     }
 }
