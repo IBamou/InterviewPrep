@@ -1,0 +1,1 @@
+{{ view('layouts.guest', ['slot' => $slot]) }}

@@ -1,7 +1,13 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+<x-app-layout>
+    @php
+        $color = $domain->color;
+        $r = hexdec(substr($color, 1, 2));
+        $g = hexdec(substr($color, 3, 2));
+        $b = hexdec(substr($color, 5, 2));
+        $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+        $textColor = $luminance > 0.5 ? '#1F2937' : '#FFFFFF';
+    @endphp
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="mb-6">
         <a href="{{ route('domains.index') }}" class="text-indigo-600 hover:text-indigo-900">
             &larr; Back to Domains
@@ -12,7 +18,7 @@
         <div class="p-6 border-b border-gray-100">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="px-3 py-1 rounded-full text-sm font-medium text-white" style="background-color: {{ $domain->color }}">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color: {{ $color }}; color: {{ $textColor }};">
                         {{ $domain->name }}
                     </span>
                 </div>
@@ -28,7 +34,7 @@
         <div class="p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-medium">Concepts</h3>
-                <a href="#" class="text-indigo-600 hover:text-indigo-900">Add Concept</a>
+                <a href="{{ route('concepts.create', $domain) }}" class="text-indigo-600 hover:text-indigo-900">Add Concept</a>
             </div>
 
             @if ($domain->concepts->isEmpty())
@@ -53,4 +59,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-app-layout>
