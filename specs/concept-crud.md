@@ -11,7 +11,7 @@ Allow an authenticated user to manage concepts within their domains - each conce
 ### US5 - List concepts in a domain
 - View all concepts of a domain
 - Display: title, difficulty (Junior/Mid/Senior), status (To Review/In Progress/Mastered)
-- Filter by status
+- Filter by status AND by difficulty (combined filter)
 
 ### US6 - Create a concept
 - title: name of the technical concept (e.g., "Eloquent N+1 Problem")
@@ -57,9 +57,10 @@ Allow an authenticated user to manage concepts within their domains - each conce
 - Concept → belongsTo Domain
 - Concept → hasMany GeneratedQuestion
 
-### Enums (strict values)
-- `difficulty`: 'junior', 'mid', 'senior'
-- `status`: 'to_review', 'in_progress', 'mastered'
+### Enums (strict values) - Using PHP 8.1+ Enums
+- `difficulty`: 'junior', 'mid', 'senior' (App\Enums\Difficulty)
+- `status`: 'to_review', 'in_progress', 'mastered' (App\Enums\Status)
+- Model uses `AsEnum` casting for automatic conversion
 
 ### Soft Deletes
 - Implement `SoftDeletes` trait on Concept model
@@ -105,14 +106,17 @@ Allow an authenticated user to manage concepts within their domains - each conce
 
 ## 🔄 Expected Routes (Explicit)
 
-- GET /domains/{domain}/concepts → index
-- GET /domains/{domain}/concepts/create → create
-- POST /domains/{domain}/concepts → store
-- GET /concepts/{concept} → show
-- GET /concepts/{concept}/edit → edit
-- PUT /concepts/{concept} → update
-- PATCH /concepts/{concept}/status → quick status update
-- DELETE /concepts/{concept} → destroy
+- GET    /domains/{domain}/concepts              → index (with filters)
+- GET    /domains/{domain}/concepts/create       → create
+- POST   /domains/{domain}/concepts             → store
+- GET    /concepts/{concept}                    → show
+- GET    /concepts/{concept}/edit                → edit
+- PUT    /concepts/{concept}                    → update
+- PATCH  /concepts/{concept}/status              → updateStatus (quick change)
+- DELETE /concepts/{concept}                     → archive (soft delete)
+- POST   /concepts/{concept}/restore            → restore
+- DELETE /concepts/{concept}/force              → forceDelete (permanent)
+- GET    /domains/{domain}/concepts/archives   → archives (list archived)
 
 ---
 
@@ -127,11 +131,12 @@ Allow an authenticated user to manage concepts within their domains - each conce
 
 ## 🖥️ Views (Blade)
 
-- concepts/index.blade.php → list concepts with filters
+- concepts/index.blade.php → list concepts with status/difficulty filters
 - concepts/create.blade.php → create form
-- concepts/edit.blade.php → edit form
-- concepts/show.blade.php → concept detail + generated questions
-- concepts/archived.blade.php → soft deleted concepts (bonus)
+- concepts/edit.blade.php → edit form + archive button
+- concepts/show.blade.php → concept detail + placeholder for generated questions
+- concepts/archives.blade.php → soft deleted concepts (restore + forceDelete)
+- components/concept-card.blade.php → reusable concept card
 
 ---
 
@@ -154,12 +159,17 @@ Pour chaque composant de cette feature, suivre ce cycle:
 3. **Review** - Soumettre le travail pour review (pas de commit/push)
 4. **Commit & Push** - Après validation, commiter et pousser (sur instruction explicite)
 
-### Branches à créer pour cette feature:
+### Branches créées pour cette feature:
 
-- `feature/concept-migration` - 🔄 Migration table concepts
-- `feature/concept-model` - À faire
-- `feature/concept-controller` - À faire
-- `feature/concept-routes` - À faire
-- `feature/concept-policy` - À faire
-- `feature/concept-form-request` - À faire
-- `feature/concept-views` - À faire
+- `feature/concept-migration` - ✅ Migration table concepts
+- `feature/concept-model` - ✅ Model Concept avec SoftDeletes
+- `feature/concept-enums` - ✅ PHP Enums Difficulty & Status
+- `feature/concept-routes` - ✅ Routes avec soft delete actions
+- `feature/concept-controller` - ✅ Controller avec CRUD + status change
+- `feature/concept-policy` - ✅ Policies DomainPolicy & ConceptPolicy
+- `feature/concept-form-request` - ✅ Form requests avec enum validation
+- `feature/concept-views` - ✅ Views + ConceptCard component
+
+### Notes
+- US11-13 (Groq API) non implémenté - placeholder dans show.blade.php et controller
+- Filter combiné (status + difficulty) implémenté dans index

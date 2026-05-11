@@ -40,6 +40,8 @@ class DomainController extends Controller
     {
         $this->authorize('view', $domain);
 
+        $domain->load('concepts');
+
         return view('domains.show', compact('domain'));
     }
 
