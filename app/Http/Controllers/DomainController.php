@@ -41,21 +41,21 @@ class DomainController extends Controller
 
     public function show(Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('view', $domain);
 
         return view('domains.show', compact('domain'));
     }
 
     public function edit(Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('update', $domain);
 
         return view('domains.edit', compact('domain'));
     }
 
     public function update(Request $request, Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('update', $domain);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -69,17 +69,10 @@ class DomainController extends Controller
 
     public function destroy(Domain $domain)
     {
-        $this->authorizeDomain($domain);
+        $this->authorize('delete', $domain);
 
         $domain->delete();
 
         return redirect()->route('domains.index')->with('success', 'Domaine supprimé.');
-    }
-
-    private function authorizeDomain(Domain $domain): void
-    {
-        if ($domain->user_id !== Auth::id()) {
-            abort(403);
-        }
     }
 }
