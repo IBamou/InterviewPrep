@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreDomainRequest;
+use App\Http\Requests\UpdateDomainRequest;
 use App\Models\Domain;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DomainController extends Controller
@@ -13,7 +14,7 @@ class DomainController extends Controller
         $domains = Domain::where('user_id', Auth::id())
             ->withCount('concepts')
             ->withCount(['concepts' => function ($query) {
-                $query->where('status', 'maîtrisé');
+                $query->where('status', 'mastered');
             }])
             ->get();
 
@@ -25,18 +26,14 @@ class DomainController extends Controller
         return view('domains.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreDomainRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'color' => 'required|string|max:50',
-        ]);
-
+        $validated = $request->validated();
         $validated['user_id'] = Auth::id();
 
         Domain::create($validated);
 
-        return redirect()->route('domains.index')->with('success', 'Domaine créé avec succès.');
+        return redirect()->route('domains.index')->with('success', 'Domain created successfully.');
     }
 
     public function show(Domain $domain)
@@ -53,18 +50,15 @@ class DomainController extends Controller
         return view('domains.edit', compact('domain'));
     }
 
-    public function update(Request $request, Domain $domain)
+    public function update(UpdateDomainRequest $request, Domain $domain)
     {
         $this->authorize('update', $domain);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'color' => 'required|string|max:50',
-        ]);
+        $validated = $request->validated();
 
         $domain->update($validated);
 
-        return redirect()->route('domains.index')->with('success', 'Domaine mis à jour.');
+        return redirect()->route('domains.index')->with('success', 'Domain updated successfully.');
     }
 
     public function destroy(Domain $domain)
@@ -73,6 +67,6 @@ class DomainController extends Controller
 
         $domain->delete();
 
-        return redirect()->route('domains.index')->with('success', 'Domaine supprimé.');
+        return redirect()->route('domains.index')->with('success', 'Domain deleted successfully.');
     }
 }
