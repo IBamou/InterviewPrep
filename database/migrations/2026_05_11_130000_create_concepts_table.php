@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('domain_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('explanation');
-            $table->enum('difficulty', ['junior', 'mid', 'senior']);
-            $table->enum('status', ['to_review', 'in_progress', 'mastered'])->default('to_review');
+            $table->string('difficulty');
+            $table->string('status')->default('to_review');
             $table->timestamps();
             $table->softDeletes();
         });

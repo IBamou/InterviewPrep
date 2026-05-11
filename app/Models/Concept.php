@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\Difficulty;
+use App\Enums\Status;
+use Illuminate\Database\Eloquent\Casts\AsEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,8 +18,8 @@ class Concept extends Model
     protected $fillable = ['domain_id', 'title', 'explanation', 'difficulty', 'status'];
 
     protected $casts = [
-        'difficulty' => 'string',
-        'status' => 'string',
+        'difficulty' => AsEnum::class.':'.Difficulty::class,
+        'status' => AsEnum::class.':'.Status::class,
     ];
 
     public function domain(): BelongsTo
