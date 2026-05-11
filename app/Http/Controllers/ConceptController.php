@@ -60,6 +60,8 @@ class ConceptController extends Controller
     {
         $this->authorize('view', $concept);
 
+        $concept->load('domain');
+
         return view('concepts.show', compact('concept'));
     }
 
