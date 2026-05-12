@@ -34,7 +34,7 @@
 <nav class="flex-1 space-y-1">
 <a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high font-body-md rounded-lg" href="{{ route('dashboard') }}"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
 <a class="flex items-center gap-3 px-3 py-2 text-primary font-bold bg-primary-container/10 font-body-md rounded-lg" href="{{ route('domains.index') }}"><span class="material-symbols-outlined">category</span>Domains</a>
-<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high font-body-md rounded-lg" href="#"><span class="material-symbols-outlined">archive</span>Archives</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high font-body-md rounded-lg" href="{{ route('concepts.archives', $domain) }}"><span class="material-symbols-outlined">archive</span>Archives</a>
 </nav>
 <div class="mt-auto">
 <button class="w-full bg-primary text-on-primary py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95"><span class="material-symbols-outlined">auto_awesome</span>AI Generator</button>

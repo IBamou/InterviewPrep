@@ -22,13 +22,11 @@ class ConceptController extends Controller
     {
         $this->authorize('view', $domain);
 
-        Concept::create([
-            'domain_id' => $domain->id,
-            'title' => $request->validated('title'),
-            'explanation' => $request->validated('explanation'),
-            'difficulty' => $request->validated('difficulty'),
-            'status' => Status::ToReview,
-        ]);
+        $validated = $request->validated();
+        $validated['domain_id'] = $domain->id;
+        $validated['status'] = Status::ToReview;
+
+        Concept::create($validated);
 
         return redirect()->route('domains.show', $domain)->with('success', 'Concept created successfully.');
     }
@@ -37,7 +35,9 @@ class ConceptController extends Controller
     {
         $this->authorize('view', $concept);
 
-        $concept->load('domain');
+        $concept->load(['domain' => function ($query) {
+            $query->withCount('concepts');
+        }]);
 
         return view('concepts.show', compact('concept'));
     }
@@ -45,6 +45,8 @@ class ConceptController extends Controller
     public function edit(Concept $concept)
     {
         $this->authorize('update', $concept);
+
+        $concept->load('domain');
 
         return view('concepts.edit', compact('concept'));
     }
