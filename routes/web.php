@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConceptController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -10,19 +11,41 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $domains = Auth::user()->domains()
+        ->withCount('concepts')
+        ->withCount(['concepts as mastered_count' => function ($query) {
+            $query->where('status', 'mastered');
+        }])
+        ->get();
+
+    $totalConcepts = $domains->sum('concepts_count');
+    $totalMastered = $domains->sum('mastered_count');
+    $masteryRate = $totalConcepts > 0 ? round(($totalMastered / $totalConcepts) * 100) : 0;
+
+    $topDomain = $domains->sortByDesc(fn($d) => $d->concepts_count > 0 ? $d->mastered_count / $d->concepts_count : 0)->first();
+
+    $reviewConcepts = \App\Models\Concept::whereIn('domain_id', Auth::user()->domains()->pluck('id'))
+        ->where('status', 'to_review')
+        ->with('domain')
+        ->latest('updated_at')
+        ->take(3)
+        ->get();
+
+    return view('dashboard', compact('domains', 'totalConcepts', 'totalMastered', 'masteryRate', 'topDomain', 'reviewConcepts'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::get('/domains/create', [DomainController::class, 'create'])->name('domains.create');
     Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
+    Route::get('/domains/archives', [DomainController::class, 'archives'])->name('domains.archives');
+    Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->name('domains.restore');
+    Route::delete('/domains/{domain}/force', [DomainController::class, 'forceDelete'])->name('domains.forceDelete');
     Route::get('/domains/{domain}', [DomainController::class, 'show'])->name('domains.show');
     Route::get('/domains/{domain}/edit', [DomainController::class, 'edit'])->name('domains.edit');
     Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
     Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
 
-    Route::get('/domains/{domain}/concepts', [ConceptController::class, 'index'])->name('concepts.index');
     Route::get('/domains/{domain}/concepts/create', [ConceptController::class, 'create'])->name('concepts.create');
     Route::post('/domains/{domain}/concepts', [ConceptController::class, 'store'])->name('concepts.store');
     Route::get('/concepts/{concept}', [ConceptController::class, 'show'])->name('concepts.show');
