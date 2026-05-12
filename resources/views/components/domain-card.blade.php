@@ -33,7 +33,7 @@
         </div>
         <div class="mt-4 flex items-center gap-4 text-sm text-gray-500">
             <span>{{ $domain->concepts_count }} concepts</span>
-            <span class="text-green-600">{{ $domain->concepts_count }} mastered</span>
+            <span class="text-green-600">{{ $domain->mastered_count ?? 0 }} mastered</span>
         </div>
     </div>
 </div>

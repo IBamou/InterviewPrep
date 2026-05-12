@@ -122,7 +122,7 @@
 <span class="material-symbols-outlined" data-icon="category" style="font-variation-settings: 'FILL' 1;">category</span>
 <span class="font-body-md">Domains</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors text-on-surface-variant dark:text-surface-variant" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors text-on-surface-variant dark:text-surface-variant" href="{{ route('domains.archives') }}">
 <span class="material-symbols-outlined" data-icon="archive">archive</span>
 <span class="font-body-md">Archives</span>
 </a>

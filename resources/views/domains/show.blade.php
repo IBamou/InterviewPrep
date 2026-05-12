@@ -126,7 +126,7 @@
 <span class="material-symbols-outlined">category</span>
 <span class="font-body-md">Domains</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors" href="{{ route('domains.archives') }}">
 <span class="material-symbols-outlined">archive</span>
 <span class="font-body-md">Archives</span>
 </a>

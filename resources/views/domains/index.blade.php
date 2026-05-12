@@ -122,7 +122,7 @@
 <span class="material-symbols-outlined" data-icon="category">category</span>
 <span class="font-body-md">Domains</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="{{ route('domains.archives') }}">
 <span class="material-symbols-outlined group-hover:text-primary" data-icon="archive">archive</span>
 <span class="font-body-md">Archives</span>
 </a>
@@ -155,9 +155,12 @@
 <span class="material-symbols-outlined" data-icon="add">add</span>
                     Add Domain
                 </a>
-<a href="{{ route('concepts.create', Auth::user()->domains->first()?->id ?: '__placeholder__') }}" class="bg-primary text-white px-5 py-2 rounded-lg font-label-md hover:shadow-lg active:opacity-80 transition-all">
+@php $firstDomain = Auth::user()->domains()->first(); @endphp
+                @if ($firstDomain)
+                <a href="{{ route('concepts.create', $firstDomain) }}" class="bg-primary text-white px-5 py-2 rounded-lg font-label-md hover:shadow-lg active:opacity-80 transition-all">
                     Create Concept
                 </a>
+                @endif
 </div>
 <div class="h-6 w-[1px] bg-outline-variant mx-2"></div>
 <div class="flex items-center gap-2">
