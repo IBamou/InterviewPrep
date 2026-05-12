@@ -7,33 +7,10 @@ use App\Http\Requests\StoreConceptRequest;
 use App\Http\Requests\UpdateConceptRequest;
 use App\Models\Concept;
 use App\Models\Domain;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ConceptController extends Controller
 {
-    public function index(Request $request, Domain $domain)
-    {
-        $this->authorize('view', $domain);
-
-        $conceptQuery = Concept::where('domain_id', $domain->id)
-            ->whereHas('domain', function ($query) {
-                $query->where('user_id', Auth::id());
-            });
-
-        if ($request->has('status') && $request->status !== '') {
-            $conceptQuery->where('status', $request->status);
-        }
-
-        if ($request->has('difficulty') && $request->difficulty !== '') {
-            $conceptQuery->where('difficulty', $request->difficulty);
-        }
-
-        $concepts = $conceptQuery->orderBy('created_at', 'desc')->get();
-
-        return view('concepts.index', compact('concepts', 'domain'));
-    }
-
     public function create(Domain $domain)
     {
         $this->authorize('view', $domain);
@@ -53,7 +30,7 @@ class ConceptController extends Controller
             'status' => Status::ToReview,
         ]);
 
-        return redirect()->route('concepts.index', $domain)->with('success', 'Concept created successfully.');
+        return redirect()->route('domains.show', $domain)->with('success', 'Concept created successfully.');
     }
 
     public function show(Concept $concept)
@@ -97,7 +74,7 @@ class ConceptController extends Controller
 
         $concept->delete();
 
-        return redirect()->route('concepts.index', $concept->domain_id)->with('success', 'Concept archived successfully.');
+        return redirect()->route('domains.show', $concept->domain_id)->with('success', 'Concept archived successfully.');
     }
 
     public function restore(Concept $concept)

@@ -31,4 +31,14 @@ class DomainPolicy
     {
         return $user->id === $domain->user_id;
     }
+
+    public function restore(User $user, Domain $domain): bool
+    {
+        return $user->id === $domain->user_id;
+    }
+
+    public function forceDelete(User $user, Domain $domain): bool
+    {
+        return $user->id === $domain->user_id;
+    }
 }

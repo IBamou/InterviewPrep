@@ -16,6 +16,7 @@ class UpdateDomainRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'color' => 'required|string|max:50',
+            'description' => 'nullable|string',
         ];
     }
 }
