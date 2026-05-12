@@ -39,8 +39,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/domains/create', [DomainController::class, 'create'])->name('domains.create');
     Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
     Route::get('/domains/archives', [DomainController::class, 'archives'])->name('domains.archives');
-    Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->name('domains.restore');
-    Route::delete('/domains/{domain}/force', [DomainController::class, 'forceDelete'])->name('domains.forceDelete');
+    Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->name('domains.restore')->withTrashed('domain');
+    Route::delete('/domains/{domain}/force', [DomainController::class, 'forceDelete'])->name('domains.forceDelete')->withTrashed('domain');
     Route::get('/domains/{domain}', [DomainController::class, 'show'])->name('domains.show');
     Route::get('/domains/{domain}/edit', [DomainController::class, 'edit'])->name('domains.edit');
     Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
@@ -53,8 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/concepts/{concept}', [ConceptController::class, 'update'])->name('concepts.update');
     Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.updateStatus');
     Route::delete('/concepts/{concept}', [ConceptController::class, 'archive'])->name('concepts.archive');
-    Route::post('/concepts/{concept}/restore', [ConceptController::class, 'restore'])->name('concepts.restore');
-    Route::delete('/concepts/{concept}/force', [ConceptController::class, 'forceDelete'])->name('concepts.forceDelete');
+    Route::post('/concepts/{concept}/restore', [ConceptController::class, 'restore'])->name('concepts.restore')->withTrashed('concept');
+    Route::delete('/concepts/{concept}/force', [ConceptController::class, 'forceDelete'])->name('concepts.forceDelete')->withTrashed('concept');
     Route::get('/domains/{domain}/concepts/archives', [ConceptController::class, 'archives'])->name('concepts.archives');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

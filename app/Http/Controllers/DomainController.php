@@ -13,7 +13,7 @@ class DomainController extends Controller
     {
         $domains = Domain::where('user_id', Auth::id())
             ->withCount('concepts')
-            ->withCount(['concepts' => function ($query) {
+            ->withCount(['concepts as mastered_count' => function ($query) {
                 $query->where('status', 'mastered');
             }])
             ->get();
