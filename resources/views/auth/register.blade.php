@@ -210,9 +210,9 @@
 <label class="block font-label-md text-on-surface-variant" for="password">Password</label>
 <div class="relative">
 <input class="w-full px-4 py-3 bg-white border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md placeholder:text-outline @error('password') border-error @enderror" id="password" name="password" placeholder="••••••••" type="password" required autocomplete="new-password"/>
-<button class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface" type="button">
-<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
-</button>
+                              <button onclick="var p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.querySelector('span').textContent=p.type==='password'?'visibility':'visibility_off'" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface" type="button">
+                                        <span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+                                    </button>
 </div>
 @error('password')
 <p class="mt-1 text-sm text-error">{{ $message }}</p>
