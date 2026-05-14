@@ -162,7 +162,7 @@
 </div>
 <div class="flex items-center gap-3">
 <a href="{{ route('domains.create') }}" class="text-primary font-label-md hover:underline decoration-2 underline-offset-4">Add Domain</a>
-<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded-lg font-label-md hover:opacity-80 transition-opacity">Create Concept</button>
+
 </div>
 </div>
 </header>
@@ -206,7 +206,7 @@
 </div>
 <div class="space-y-stack-sm">
 <label class="font-label-md text-on-surface-variant block" for="color">Accent Color</label>
-<input class="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary bg-surface font-body-md px-4 py-3 @error('color') border-error @enderror" id="color" name="color" value="{{ old('color', '#3525cd') }}" placeholder="#3525cd" type="text"/>
+<input class="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary bg-surface font-body-md px-4 py-3 @error('color') border-error @enderror" id="color" name="color" value="{{ old('color', '#3525cd') }}" placeholder="#3525cd" type="text" required/>
 @error('color')
 <p class="mt-1 text-sm text-error">{{ $message }}</p>
 @enderror

@@ -39,7 +39,7 @@
                       "on-surface": "#151c27",
                       "on-primary": "#ffffff",
                       "secondary-container": "#6cf8bb",
-                      "on-primary-fixed": "#002113",
+                      "on-primary-fixed": "#0f0069",
                       "primary-container": "#4f46e5",
                       "surface-bright": "#f9f9ff",
                       "secondary": "#006c49",

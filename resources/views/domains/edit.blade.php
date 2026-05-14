@@ -164,7 +164,11 @@
 <span class="text-on-surface font-bold">Edit Domain</span>
 </nav>
 
-@if ($errors->any())
+@if (session('success'))
+<div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{{ session('success') }}</div>
+@endif
+
+                    @if ($errors->any())
 <div class="mb-6 p-4 bg-error-container/20 border border-error/20 text-on-error-container rounded-lg text-sm">
 <ul class="list-disc pl-4 space-y-1">
 @foreach ($errors->all() as $error)

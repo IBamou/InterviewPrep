@@ -155,7 +155,7 @@
 <span class="material-symbols-outlined" data-icon="add">add</span>
                     Add Domain
                 </a>
-@php $firstDomain = Auth::user()->domains()->first(); @endphp
+@php $firstDomain = $domains->first(); @endphp
                 @if ($firstDomain)
                 <a href="{{ route('concepts.create', $firstDomain) }}" class="bg-primary text-white px-5 py-2 rounded-lg font-label-md hover:shadow-lg active:opacity-80 transition-all">
                     Create Concept
@@ -210,8 +210,8 @@ $i = $loop->index % 4;
 @endphp
 <div class="bg-white rounded-xl border border-outline-variant p-6 shadow-sm hover:shadow-md transition-shadow group">
 <div class="flex justify-between items-start mb-4">
-<div class="p-3 {{ $colorClasses[$i] }} rounded-xl group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined {{ $iconColors[$i] }}" data-icon="database">database</span>
+<div class="p-3 rounded-xl group-hover:scale-110 transition-transform" style="background-color: {{ $domain->color }}20;">
+<span class="material-symbols-outlined" style="color: {{ $domain->color }};" data-icon="database">database</span>
 </div>
 <span class="px-3 py-1 {{ $badgeColors[$i] }} text-xs font-bold rounded-full uppercase tracking-tight">{{ $pct >= 100 ? 'Maîtrisé' : ($pct >= 50 ? 'En cours' : 'À revoir') }}</span>
 </div>
@@ -229,8 +229,7 @@ $i = $loop->index % 4;
 </div>
 </div>
 <div class="mt-8 flex items-center justify-between">
-<span class="text-xs font-label-md text-indigo-600 px-2 py-1 bg-indigo-50 border border-indigo-200 rounded">Junior</span>
-<a href="{{ route('domains.show', $domain) }}" class="text-primary hover:underline font-label-md flex items-center gap-1">
+                    <a href="{{ route('domains.show', $domain) }}" class="text-primary hover:underline font-label-md flex items-center gap-1">
                         {{ $pct >= 100 ? 'Review' : 'Continue' }} <span class="material-symbols-outlined text-sm" data-icon="{{ $pct >= 100 ? 'visibility' : 'play_arrow' }}">{{ $pct >= 100 ? 'visibility' : 'play_arrow' }}</span>
 </a>
 </div>

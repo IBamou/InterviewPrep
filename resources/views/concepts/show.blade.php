@@ -172,7 +172,7 @@ $sl = ['to_review' => 'À revoir', 'in_progress' => 'En cours', 'mastered' => 'M
 <h3 class="text-headline-sm font-display font-bold">AI Interview Prep</h3>
 </div>
 <p class="text-on-primary-container mb-8 font-body-md opacity-90">Test your knowledge with custom-tailored technical questions generated from this concept.</p>
-<a href="{{ route('concepts.show', $concept) }}?generate=1" class="block w-full py-4 bg-white text-primary rounded-xl font-bold text-center shadow-md active:scale-95 transition-transform">Generate Questions</a>
+<span class="block w-full py-4 bg-white/20 text-on-primary rounded-xl font-bold text-center opacity-60">Generate Questions (Coming Soon)</span>
 </div>
 </div>
 <!-- Domain Context -->

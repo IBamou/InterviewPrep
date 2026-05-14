@@ -150,10 +150,7 @@
 <div class="flex items-center gap-6">
 <div class="flex gap-4">
 <a href="{{ route('domains.create') }}" class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Add Domain</a>
-@php $firstDomain = Auth::user()->domains()->first(); @endphp
-                @if ($firstDomain)
-                <a href="{{ route('concepts.create', $firstDomain) }}" class="font-label-md text-label-md bg-primary-container text-on-primary px-4 py-1.5 rounded-lg hover:opacity-80 transition-opacity">Create Concept</a>
-                @endif
+
 </div>
 <div class="flex items-center gap-4 text-outline border-l border-outline-variant pl-4">
 <form method="POST" action="{{ route('logout') }}">
