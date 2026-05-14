@@ -132,6 +132,9 @@
 </header>
 <!-- Main Content -->
 <main class="ml-64 pt-24 pb-12 px-8 max-w-[1440px] mx-auto">
+@if (session('success'))
+<div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{{ session('success') }}</div>
+@endif
 <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
 <div class="space-y-4">
 <nav class="flex items-center gap-2 text-on-surface-variant font-label-md">

@@ -192,7 +192,7 @@
 </div>
 <div>
 <p class="text-xs text-on-surface-variant font-label-md uppercase tracking-wider">Overall Progress</p>
-<p class="text-headline-md font-bold text-on-surface">{{ $domains->sum('concepts_count') > 0 ? round(($domains->sum('concepts_count') > 0 ? $domains->sum('mastered_count') / $domains->sum('concepts_count') : 0) * 100) : 0 }}%</p>
+<p class="text-headline-md font-bold text-on-surface">{{ $domains->sum('concepts_count') > 0 ? round(($domains->sum('mastered_count') / $domains->sum('concepts_count')) * 100) : 0 }}%</p>
 </div>
 </div>
 </div>
