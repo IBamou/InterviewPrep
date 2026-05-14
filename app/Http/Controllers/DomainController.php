@@ -28,6 +28,8 @@ class DomainController extends Controller
 
     public function store(StoreDomainRequest $request)
     {
+        $this->authorize('create', Domain::class);
+
         $validated = $request->validated();
         $validated['user_id'] = Auth::id();
 
@@ -40,12 +42,9 @@ class DomainController extends Controller
     {
         $this->authorize('view', $domain);
 
-        $domain->loadCount('concepts');
-        $domain->loadCount(['concepts as mastered_count' => function ($query) {
+        $domain->loadCount(['concepts', 'concepts as mastered_count' => function ($query) {
             $query->where('status', 'mastered');
-        }]);
-
-        $domain->load('concepts');
+        }])->load('concepts');
 
         return view('domains.show', compact('domain'));
     }

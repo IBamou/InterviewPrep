@@ -98,7 +98,7 @@
 <nav class="flex-1 space-y-1">
 <a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="{{ route('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
 <a class="flex items-center gap-3 px-3 py-2 rounded-xl text-primary dark:text-inverse-primary font-bold bg-primary-container/10 dark:bg-primary-fixed-dim/10 transition-colors group" href="{{ route('domains.index') }}"><span class="material-symbols-outlined">category</span><span>Domains</span></a>
-<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="#"><span class="material-symbols-outlined">archive</span><span>Archives</span></a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="{{ route('domains.archives') }}"><span class="material-symbols-outlined">archive</span><span>Archives</span></a>
 </nav>
 <div class="mt-auto px-2">
 <button class="w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>AI Generator</button>
@@ -172,7 +172,7 @@ $sl = ['to_review' => 'À revoir', 'in_progress' => 'En cours', 'mastered' => 'M
 <h3 class="text-headline-sm font-display font-bold">AI Interview Prep</h3>
 </div>
 <p class="text-on-primary-container mb-8 font-body-md opacity-90">Test your knowledge with custom-tailored technical questions generated from this concept.</p>
-<a href="{{ route('concepts.show', $concept) }}?generate=1" class="block w-full py-4 bg-white text-primary rounded-xl font-bold text-center shadow-md active:scale-95 transition-transform">Generate Questions</a>
+<span class="block w-full py-4 bg-white/20 text-on-primary rounded-xl font-bold text-center opacity-60">Generate Questions (Coming Soon)</span>
 </div>
 </div>
 <!-- Domain Context -->
@@ -182,7 +182,7 @@ $sl = ['to_review' => 'À revoir', 'in_progress' => 'En cours', 'mastered' => 'M
 <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary">category</span></div>
 <div>
 <a href="{{ route('domains.show', $concept->domain) }}" class="font-bold text-primary hover:underline">{{ $concept->domain->name }}</a>
-<p class="text-xs text-on-surface-variant">{{ $concept->domain->concepts()->count() }} concepts</p>
+<p class="text-xs text-on-surface-variant">{{ $concept->domain->concepts_count }} concepts</p>
 </div>
 </div>
 </div>

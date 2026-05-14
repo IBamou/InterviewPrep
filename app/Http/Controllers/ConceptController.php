@@ -37,7 +37,7 @@ class ConceptController extends Controller
     {
         $this->authorize('view', $concept);
 
-        $concept->load('domain');
+        $concept->load(['domain' => fn($q) => $q->withCount('concepts')]);
 
         return view('concepts.show', compact('concept'));
     }
