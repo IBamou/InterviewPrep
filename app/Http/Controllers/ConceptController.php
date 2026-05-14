@@ -111,14 +111,4 @@ class ConceptController extends Controller
         return view('concepts.archives', compact('concepts', 'domain'));
     }
 
-    // US11 - Generate interview questions (placeholder)
-    // TODO: Send a request to Groq API to generate 5 interview questions
-    // based on the concept's title and explanation
-    // Store the generated questions in the generated_questions table
-    // Return them to the view
-    public function generateQuestions(Concept $concept)
-    {
-        // Placeholder for Groq API integration
-        // Will be implemented in a future branch
-    }
 }
