@@ -101,11 +101,11 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .status-badge { @apply px-3 py-1 rounded-full text-xs font-semibold; }
+        .status-badge { padding-left: 0.75rem; padding-right: 0.75rem; padding-top: 0.25rem; padding-bottom: 0.25rem; border-radius: 9999px; font-size: 0.75rem; line-height: 1rem; font-weight: 600; }
         .badge-review { background-color: rgba(225, 29, 72, 0.1); color: #e11d48; }
         .badge-progress { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
         .badge-mastered { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .difficulty-tag { @apply border px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider; }
+        .difficulty-tag { border-width: 1px; border-style: solid; padding-left: 0.5rem; padding-right: 0.5rem; padding-top: 0.125rem; padding-bottom: 0.125rem; border-radius: 0.25rem; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         .tag-junior { border-color: #818cf8; color: #4f46e5; background-color: rgba(129, 140, 248, 0.05); }
         .tag-mid { border-color: #334155; color: #334155; }
         .tag-senior { border-color: #0f172a; color: #0f172a; border-width: 2px; }
