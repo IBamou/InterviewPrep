@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono&amp;family=Geist:wght@400;500&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -215,8 +214,6 @@
 <!-- Feature 3 -->
 <div class="md:col-span-3 bg-inverse-surface text-inverse-on-surface p-10 rounded-xl shadow-xl flex flex-col md:flex-row items-center gap-10 overflow-hidden">
 <div class="flex-1 relative">
-<div class="grid grid-cols-12 gap-1">
-</div>
 </div>
 <div class="flex-1">
 <h3 class="font-display text-headline-lg mb-4">Progress Intelligence</h3>
@@ -228,7 +225,7 @@
 </div>
 <div class="bg-surface/10 p-4 rounded-lg flex-1">
 <div class="text-headline-md font-bold text-tertiary-fixed">12</div>
-<div class="text-label-md text-surface-variant/70">Mock Interiews</div>
+<div class="text-label-md text-surface-variant/70">Mock Interviews</div>
 </div>
 </div>
 </div>

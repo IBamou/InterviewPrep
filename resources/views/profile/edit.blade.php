@@ -158,7 +158,10 @@
 <div class="flex items-center gap-6">
 <div class="flex gap-4">
 <a href="{{ route('domains.create') }}" class="font-label-md text-label-md px-4 py-2 rounded-lg border border-outline-variant text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-all">Add Domain</a>
-<a href="{{ route('concepts.create', Auth::user()->domains()->first()?->id ?: '__placeholder__') }}" class="font-label-md text-label-md px-4 py-2 rounded-lg bg-primary text-on-primary text-label-md font-medium hover:opacity-90 active:scale-95 transition-all">Create Concept</a>
+                            @php $firstConceptDomain = Auth::user()->domains()->first(); @endphp
+                            @if ($firstConceptDomain)
+                            <a href="{{ route('concepts.create', $firstConceptDomain->id) }}" class="font-label-md text-label-md px-4 py-2 rounded-lg bg-primary text-on-primary text-label-md font-medium hover:opacity-90 active:scale-95 transition-all">Create Concept</a>
+                            @endif
 </div>
 <div class="flex items-center gap-4 text-outline border-l border-outline-variant pl-4">
 <form method="POST" action="{{ route('logout') }}">
@@ -431,7 +434,7 @@ A new verification link has been sent to your email address.
 </div>
 </main>
 <!-- Delete Account Modal -->
-<div id="delete-account-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+<div id="delete-account-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm {{ $errors->userDeletion->isNotEmpty() ? '' : 'hidden' }}">
 <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4">
 <div class="flex items-center gap-3 mb-6">
 <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">

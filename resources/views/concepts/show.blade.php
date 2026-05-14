@@ -98,7 +98,7 @@
 <nav class="flex-1 space-y-1">
 <a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="{{ route('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
 <a class="flex items-center gap-3 px-3 py-2 rounded-xl text-primary dark:text-inverse-primary font-bold bg-primary-container/10 dark:bg-primary-fixed-dim/10 transition-colors group" href="{{ route('domains.index') }}"><span class="material-symbols-outlined">category</span><span>Domains</span></a>
-<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="{{ route('domains.archives') }}"><span class="material-symbols-outlined">archive</span><span>Archives</span></a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant dark:text-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors group" href="{{ route('concepts.archives', $concept->domain) }}"><span class="material-symbols-outlined">archive</span><span>Archives</span></a>
 </nav>
 <div class="mt-auto px-2">
 <button class="w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>AI Generator</button>

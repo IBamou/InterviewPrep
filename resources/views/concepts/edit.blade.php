@@ -33,7 +33,7 @@
 <nav class="flex-1 space-y-1">
 <a class="flex items-center gap-3 px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high group" href="{{ route('dashboard') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
 <a class="flex items-center gap-3 px-3 py-2 rounded-lg font-bold bg-primary-container/10 text-primary font-body-md text-body-md group" href="{{ route('domains.index') }}"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">category</span><span>Domains</span></a>
-<a class="flex items-center gap-3 px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high group" href="{{ route('domains.archives') }}"><span class="material-symbols-outlined">archive</span><span>Archives</span></a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container-high group" href="{{ route('concepts.archives', $concept->domain) }}"><span class="material-symbols-outlined">archive</span><span>Archives</span></a>
 </nav>
 <div class="mt-auto px-2">
 <button class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-label-md hover:opacity-90 active:scale-95"><span class="material-symbols-outlined">auto_awesome</span><span>AI Generator</span></button>
