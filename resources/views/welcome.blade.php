@@ -1,348 +1,207 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
+<html class="light" lang="en">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>InterviewPrep - Master the Technical Interview</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono&amp;family=Geist:wght@400;500&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f9f9ff;
-        }
-    </style>
-<script id="tailwind-config">
-        tailwind.config = {
-          darkMode: "class",
-          theme: {
-            extend: {
-              "colors": {
-                      "surface-tint": "#4d44e3",
-                      "surface-container-high": "#e2e8f8",
-                      "tertiary-fixed": "#ffddb8",
-                      "on-tertiary-fixed-variant": "#653e00",
-                      "tertiary": "#684000",
-                      "on-primary-container": "#dad7ff",
-                      "on-secondary-fixed": "#002113",
-                      "secondary-fixed": "#6ffbbe",
-                      "outline": "#777587",
-                      "inverse-surface": "#2a313d",
-                      "on-tertiary-fixed": "#2a1700",
-                      "primary-container": "#4f46e5",
-                      "on-tertiary-container": "#ffd4a4",
-                      "on-surface-variant": "#464555",
-                      "on-primary-fixed": "#0f0069",
-                      "surface-dim": "#d3daea",
-                      "primary-fixed-dim": "#c3c0ff",
-                      "surface-container-low": "#f0f3ff",
-                      "surface-variant": "#dce2f3",
-                      "on-secondary-fixed-variant": "#005236",
-                      "on-secondary-container": "#00714d",
-                      "on-secondary": "#ffffff",
-                      "secondary-fixed-dim": "#4edea3",
-                      "primary": "#3525cd",
-                      "on-error": "#ffffff",
-                      "on-background": "#151c27",
-                      "error-container": "#ffdad6",
-                      "surface-container": "#e7eefe",
-                      "surface-container-highest": "#dce2f3",
-                      "on-primary-fixed-variant": "#3323cc",
-                      "surface-container-lowest": "#ffffff",
-                      "secondary": "#006c49",
-                      "inverse-primary": "#c3c0ff",
-                      "surface": "#f9f9ff",
-                      "inverse-on-surface": "#ebf1ff",
-                      "on-primary": "#ffffff",
-                      "on-error-container": "#93000a",
-                      "background": "#f9f9ff",
-                      "outline-variant": "#c7c4d8",
-                      "primary-fixed": "#e2dfff",
-                      "on-surface": "#151c27",
-                      "surface-bright": "#f9f9ff",
-                      "on-tertiary": "#ffffff",
-                      "secondary-container": "#6cf8bb",
-                      "tertiary-fixed-dim": "#ffb95f",
-                      "tertiary-container": "#885500",
-                      "error": "#ba1a1a"
-              },
-              "borderRadius": {
-                      "DEFAULT": "0.25rem",
-                      "lg": "0.5rem",
-                      "xl": "0.75rem",
-                      "full": "9999px"
-              },
-              "spacing": {
-                      "stack-md": "1rem",
-                      "margin-x": "2rem",
-                      "gutter": "1.5rem",
-                      "stack-sm": "0.5rem",
-                      "stack-lg": "2rem",
-                      "container-max": "1280px"
-              },
-              "fontFamily": {
-                      "display": ["Inter"],
-                      "code": ["JetBrains Mono"],
-                      "label-md": ["Geist"],
-                      "headline-md": ["Inter"],
-                      "headline-lg": ["Inter"],
-                      "body-lg": ["Inter"],
-                      "body-md": ["Inter"]
-              },
-              "fontSize": {
-                      "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                      "code": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
-                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
-                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
-                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
-                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
-              }
-            },
-          },
-        }
-    </script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#0077B6', 'primary-dark': '#005F8F', 'primary-light': '#00B4D8',
+        secondary: '#00A896', error: '#E63946', surface: '#FFFFFF', background: '#F8FBFF',
+        'on-surface': '#1A1A2E', 'on-surface-variant': '#546E7A', outline: '#CFD8DC', 'outline-variant': '#E8EDF2',
+      },
+      fontFamily: { sans: ['Inter', 'sans-serif'] }
+    }
+  }
+}
+</script>
+<style>.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }</style>
 </head>
-<body class="bg-surface text-on-surface">
-<!-- TopNavBar -->
-<header class="fixed top-0 w-full z-50 flex items-center justify-between px-margin-x h-16 max-w-container-max mx-auto bg-surface dark:bg-background border-b border-outline-variant dark:border-outline shadow-sm">
-<div class="flex items-center gap-8">
-<span class="font-display text-headline-md font-bold text-primary dark:text-primary-fixed-dim">InterviewPrep</span>
-<nav class="hidden md:flex items-center gap-6">
-<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Features</a>
-<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Curriculum</a>
-<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Pricing</a>
-<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Documentation</a>
-</nav>
+<body class="bg-background font-sans text-on-surface">
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-6 md:px-12 h-14 bg-white/80 backdrop-blur-md border-b border-outline-variant/50">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[18px]" style="font-variation-settings: 'FILL' 1;">school</span>
 </div>
-<div class="flex items-center gap-4">
+<span class="text-[16px] font-bold text-on-surface">InterviewPrep</span>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="#features">Features</a>
+<a class="text-[13px] text-on-surface-variant hover:text-primary transition-colors" href="#how-it-works">How it works</a>
+</nav>
+<div class="flex items-center gap-3">
 @guest
-<a href="{{ route('login') }}" class="font-label-md text-label-md text-primary dark:text-primary-fixed-dim active:scale-95 transition-transform duration-150">Log In</a>
-<a href="{{ route('register') }}" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md active:scale-95 transition-transform duration-150">Get Started</a>
+<a href="{{ route('login') }}" class="text-[13px] text-on-surface-variant hover:text-primary transition-colors">Log In</a>
+<a href="{{ route('register') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">Get Started</a>
 @else
-<a href="{{ url('/dashboard') }}" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md active:scale-95 transition-transform duration-150">Dashboard</a>
+<a href="{{ url('/dashboard') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">Dashboard</a>
 @endguest
 </div>
 </header>
-<main class="pt-16">
-<!-- Hero Section -->
-<section class="relative overflow-hidden py-24 md:py-32 bg-surface">
-<div class="max-w-container-max mx-auto px-margin-x grid md:grid-cols-2 gap-12 items-center">
+<main class="pt-14">
+<section class="relative overflow-hidden py-20 md:py-28 bg-white">
+<div class="max-w-5xl mx-auto px-6 md:px-12 grid md:grid-cols-2 gap-12 items-center">
 <div class="relative z-10">
-<span class="inline-block px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-md text-[12px] mb-6">STRUCTURED INTERVIEW PREP</span>
-<h1 class="font-display text-display text-on-surface mb-6 leading-tight">Master the <span class="text-primary">Technical Interview.</span></h1>
-<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-lg">Structure your knowledge, track progress with manual concepts, and generate AI-powered interview questions to ace your next Laravel or backend role.</p>
-<div class="flex flex-wrap gap-4">
-<a href="{{ route('register') }}" class="bg-primary text-on-primary px-8 py-4 rounded-xl font-headline-md active:scale-95 transition-transform duration-150 shadow-lg shadow-primary/20">Get Started for Free</a>
-<a href="#" class="border border-outline-variant text-on-surface px-8 py-4 rounded-xl font-headline-md active:scale-95 transition-transform duration-150 hover:bg-surface-container-low">Watch Demo</a>
+<span class="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[12px] font-medium mb-4">STRUCTURED INTERVIEW PREP</span>
+<h1 class="text-[36px] md:text-[44px] font-bold text-on-surface mb-4 leading-tight">Master the <span class="text-primary">Technical Interview.</span></h1>
+<p class="text-[14px] text-on-surface-variant mb-8 max-w-md leading-relaxed">Structure your knowledge, track progress, and generate AI-powered interview questions to ace your next role.</p>
+<div class="flex gap-3">
+<a href="{{ route('register') }}" class="px-5 py-2.5 bg-primary text-white rounded-lg text-[14px] font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/10">Get Started</a>
+<a href="#features" class="px-5 py-2.5 border border-outline-variant text-on-surface-variant rounded-lg text-[14px] font-medium hover:bg-surface-container transition-all">Learn More</a>
 </div>
 </div>
 <div class="relative">
-<div class="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
-<div class="relative bg-inverse-surface rounded-2xl p-4 shadow-2xl overflow-hidden border border-outline/20">
-<div class="flex items-center gap-2 mb-4 border-b border-outline/10 pb-2">
-<div class="w-3 h-3 rounded-full bg-error/50"></div>
-<div class="w-3 h-3 rounded-full bg-tertiary/50"></div>
-<div class="w-3 h-3 rounded-full bg-secondary/50"></div>
-<div class="ml-auto font-code text-[12px] text-surface-variant/50">auth_service.php</div>
+<div class="absolute -top-16 -right-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="relative bg-[#1A1A2E] rounded-xl p-4 shadow-xl overflow-hidden">
+<div class="flex items-center gap-2 mb-3 border-b border-white/10 pb-2">
+<div class="w-2.5 h-2.5 rounded-full bg-error/60"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-amber-500/60"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-secondary/60"></div>
+<div class="ml-auto text-[11px] text-white/30">engine.php</div>
 </div>
-<pre class="font-code text-primary-fixed-dim text-sm leading-relaxed"><code><span class="text-secondary-fixed">class</span> <span class="text-tertiary-fixed">InterviewEngine</span> {
-    <span class="text-outline">/**
-     * @param string $topic
-     * @return Guide
-     */</span>
-    <span class="text-secondary-fixed">public function</span> <span class="text-primary-fixed">generateMastery</span>($topic) {
-        <span class="text-secondary-fixed">return</span> <span class="text-primary-fixed">AI</span>::<span class="text-primary-fixed">structure</span>($topic)
-            -&gt;<span class="text-primary-fixed">withConcepts</span>()
-            -&gt;<span class="text-primary-fixed">withChallenges</span>();
+<pre class="text-[12px] leading-relaxed text-white/80"><code><span class="text-secondary">class</span> <span class="text-primary-light">InterviewEngine</span> {
+    <span class="text-secondary">public function</span> <span class="text-primary-light">generateMastery</span>($topic) {
+        <span class="text-secondary">return</span> <span class="text-primary-light">AI</span>::<span class="text-primary-light">structure</span>($topic)
+            -><span class="text-primary-light">withConcepts</span>()
+            -><span class="text-primary-light">withChallenges</span>();
     }
 }</code></pre>
 </div>
-<!-- Stats Floating Card -->
-<div class="absolute -bottom-8 -left-8 bg-surface-container-lowest p-6 rounded-xl shadow-xl border border-outline-variant max-w-[200px]">
-<div class="flex items-center gap-3 mb-2">
-<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-<span class="font-label-md text-on-surface">Mastery: 84%</span>
+<div class="absolute -bottom-4 -left-4 bg-white p-3 rounded-lg shadow-lg border border-outline-variant/50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[12px] font-medium text-on-surface">Mastery: 84%</span>
 </div>
-<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-<div class="bg-secondary h-full w-[84%]"></div>
+<div class="w-24 bg-surface-container h-1 rounded-full mt-1.5">
+<div class="bg-secondary h-full w-[84%] rounded-full"></div>
 </div>
 </div>
 </div>
 </div>
 </section>
-<!-- Features Bento Grid -->
-<section class="py-24 bg-surface-container-low">
-<div class="max-w-container-max mx-auto px-margin-x">
-<div class="text-center mb-16">
-<h2 class="font-display text-headline-lg text-on-surface mb-4">Precision-Engineered Preparation</h2>
-<p class="font-body-md text-on-surface-variant">Tools designed for the modern backend professional.</p>
+<section id="features" class="py-16 bg-surface-container/30">
+<div class="max-w-5xl mx-auto px-6 md:px-12">
+<div class="text-center mb-12">
+<h2 class="text-[24px] font-bold text-on-surface mb-2">Precision-Engineered Preparation</h2>
+<p class="text-[14px] text-on-surface-variant">Tools designed for the modern backend professional.</p>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-<!-- Feature 1 -->
-<div class="md:col-span-2 bg-surface-container-lowest p-10 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow group">
-<div class="flex flex-col md:flex-row gap-10 items-center">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="md:col-span-2 bg-white p-6 rounded-xl border border-outline-variant/50">
+<div class="flex flex-col md:flex-row gap-6 items-center">
 <div class="flex-1">
-<span class="material-symbols-outlined text-primary text-4xl mb-6">neurology</span>
-<h3 class="font-display text-headline-md text-on-surface mb-4">Manual Concept Tracking</h3>
-<p class="font-body-md text-on-surface-variant">Define your own technical concepts with personal explanations. Build a custom knowledge base tailored to your interview preparation needs.</p>
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">neurology</span>
 </div>
-<div class="flex-1 w-full bg-surface-container h-48 rounded-lg overflow-hidden flex items-center justify-center p-6 border border-outline-variant/30">
-<div class="w-full space-y-3">
-<div class="h-4 bg-primary/10 rounded w-3/4"></div>
-<div class="h-4 bg-primary/10 rounded w-full"></div>
-<div class="h-4 bg-primary/10 rounded w-5/6"></div>
+<h3 class="text-[16px] font-semibold text-on-surface mb-2">Manual Concept Tracking</h3>
+<p class="text-[13px] text-on-surface-variant leading-relaxed">Define your own technical concepts with personal explanations. Build a custom knowledge base.</p>
 </div>
-</div>
-</div>
-</div>
-<!-- Feature 2 -->
-<div class="bg-surface-container-lowest p-10 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow">
-<span class="material-symbols-outlined text-primary text-4xl mb-6">account_tree</span>
-<h3 class="font-display text-headline-md text-on-surface mb-4">Domain Mastery</h3>
-<p class="font-body-md text-on-surface-variant mb-6">Organize preparation by Laravel, PHP, Architecture, and more. Deep dive into specific technical stacks.</p>
-<div class="flex flex-wrap gap-2">
-<span class="px-3 py-1 rounded bg-secondary-container text-on-secondary-container font-label-md text-[12px]">Laravel</span>
-<span class="px-3 py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-[12px]">Redis</span>
-<span class="px-3 py-1 rounded bg-surface-container-high text-on-surface-variant font-label-md text-[12px]">Docker</span>
+<div class="flex-1 w-full bg-surface-container/50 h-32 rounded-lg overflow-hidden p-4 border border-outline-variant/30">
+<div class="space-y-2">
+<div class="h-2.5 bg-primary/10 rounded w-3/4"></div>
+<div class="h-2.5 bg-primary/10 rounded w-full"></div>
+<div class="h-2.5 bg-primary/10 rounded w-5/6"></div>
 </div>
 </div>
-<!-- Feature 3 -->
-<div class="md:col-span-3 bg-inverse-surface text-inverse-on-surface p-10 rounded-xl shadow-xl flex flex-col md:flex-row items-center gap-10 overflow-hidden">
-<div class="flex-1 relative">
 </div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-outline-variant/50">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">account_tree</span>
+</div>
+<h3 class="text-[16px] font-semibold text-on-surface mb-2">Domain Mastery</h3>
+<p class="text-[13px] text-on-surface-variant mb-4 leading-relaxed">Organize preparation by Laravel, PHP, Architecture, and more.</p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 rounded bg-primary/5 text-primary text-[11px] font-medium">Laravel</span>
+<span class="px-2 py-0.5 rounded bg-secondary/5 text-secondary text-[11px] font-medium">Redis</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[11px] font-medium">Docker</span>
+</div>
+</div>
+<div class="md:col-span-3 bg-gradient-to-r from-primary to-primary-light text-white p-6 rounded-xl flex flex-col md:flex-row items-center gap-6">
 <div class="flex-1">
-<h3 class="font-display text-headline-lg mb-4">Progress Intelligence</h3>
-<p class="font-body-md text-surface-variant mb-8">Visualize your growth with dynamic heatmaps and automated mastery scores. Know exactly where you stand before the recruiter calls.</p>
-<div class="flex gap-4">
-<div class="bg-surface/10 p-4 rounded-lg flex-1">
-<div class="text-headline-md font-bold text-secondary-fixed">--</div>
-<div class="text-label-md text-surface-variant/70">Concepts Mastered</div>
+<h3 class="text-[18px] font-semibold mb-2">Progress Intelligence</h3>
+<p class="text-[13px] text-white/70 leading-relaxed">Visualize your growth with dynamic mastery scores. Know exactly where you stand.</p>
 </div>
-<div class="bg-surface/10 p-4 rounded-lg flex-1">
-<div class="text-headline-md font-bold text-tertiary-fixed">--</div>
-<div class="text-label-md text-surface-variant/70">AI Questions Generated</div>
+<div class="flex gap-3">
+<div class="bg-white/10 p-3 rounded-lg flex-1">
+<div class="text-[20px] font-bold text-white">--</div>
+<div class="text-[11px] text-white/60">Concepts Mastered</div>
 </div>
+<div class="bg-white/10 p-3 rounded-lg flex-1">
+<div class="text-[20px] font-bold text-white">--</div>
+<div class="text-[11px] text-white/60">AI Questions</div>
 </div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- How It Works -->
-<section class="py-24 bg-surface overflow-hidden">
-<div class="max-w-container-max mx-auto px-margin-x">
-<div class="text-center mb-20">
-<h2 class="font-display text-headline-lg text-on-surface">Your Path to Mastery</h2>
-</div>
-<div class="relative flex flex-col md:flex-row justify-between gap-12">
-<!-- Progress Line (Desktop) -->
-<div class="hidden md:block absolute top-12 left-0 w-full h-[2px] bg-outline-variant z-0"></div>
-<!-- Step 1 -->
-<div class="relative z-10 flex-1 text-center">
-<div class="w-24 h-24 bg-surface-container-highest border-4 border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-<span class="material-symbols-outlined text-primary text-3xl">map</span>
-</div>
-<h4 class="font-display text-headline-md mb-2">1. Define Domains</h4>
-<p class="font-body-md text-on-surface-variant px-4">Select the tech stacks and architectural patterns you need to master.</p>
-</div>
-<!-- Step 2 -->
-<div class="relative z-10 flex-1 text-center">
-<div class="w-24 h-24 bg-surface-container-highest border-4 border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-<span class="material-symbols-outlined text-primary text-3xl">edit_note</span>
-</div>
-<h4 class="font-display text-headline-md mb-2">2. Create Concepts</h4>
-<p class="font-body-md text-on-surface-variant px-4">Write your own explanations for each technical topic. Define what matters for your interview journey.</p>
-</div>
-<!-- Step 3 -->
-<div class="relative z-10 flex-1 text-center">
-<div class="w-24 h-24 bg-surface-container-highest border-4 border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-<span class="material-symbols-outlined text-primary text-3xl">terminal</span>
-</div>
-<h4 class="font-display text-headline-md mb-2">3. Generate AI Questions</h4>
-<p class="font-body-md text-on-surface-variant px-4">Generate tailored interview questions from your concepts using AI. Practice answering with confidence.</p>
-</div>
-<!-- Step 4 -->
-<div class="relative z-10 flex-1 text-center">
-<div class="w-24 h-24 bg-primary border-4 border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-<span class="material-symbols-outlined text-on-primary text-3xl">celebration</span>
-</div>
-<h4 class="font-display text-headline-md mb-2">4. Land the Job</h4>
-<p class="font-body-md text-on-surface-variant px-4">Approach your interview with the confidence of a domain expert.</p>
-</div>
-</div>
-</div>
-</section>
-<!-- Testimonial Section -->
-<section class="py-24 bg-surface-container">
-<div class="max-w-container-max mx-auto px-margin-x">
-<div class="bg-surface-container-lowest p-12 md:p-20 rounded-3xl border border-outline-variant shadow-sm relative overflow-hidden text-center">
-<div class="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full"></div>
-<div class="max-w-3xl mx-auto">
-<div class="flex justify-center mb-8">
-<div class="flex text-secondary">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-</div>
-</div>
-<blockquote class="font-display text-headline-lg text-on-surface mb-10 leading-snug">
-                            "The most organized way to prepare for technical interviews. I structure my knowledge, track my mastery, and generate custom questions to test myself."
-                        </blockquote>
-<div class="flex flex-col items-center">
-<div class="w-16 h-16 rounded-full mb-4 border-2 border-primary bg-primary/10 flex items-center justify-center">
-<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">person</span>
-</div>
-<cite class="not-italic">
-<span class="block font-headline-md text-on-surface">Developers like you</span>
-<span class="block font-label-md text-on-surface-variant">Join the community</span>
-</cite>
 </div>
 </div>
 </div>
 </div>
 </section>
-<!-- CTA Section -->
-<section class="py-24">
-<div class="max-w-container-max mx-auto px-margin-x">
-<div class="bg-primary rounded-3xl p-12 md:p-20 text-center relative overflow-hidden">
-<div class="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-<svg height="100%" preserveaspectratio="none" viewbox="0 0 100 100" width="100%">
-<defs>
-<pattern height="10" id="grid" patternunits="userSpaceOnUse" width="10">
-<path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"></path>
-</pattern>
-</defs>
-<rect fill="url(#grid)" height="100" width="100"></rect>
-</svg>
+<section id="how-it-works" class="py-16 bg-white">
+<div class="max-w-5xl mx-auto px-6 md:px-12">
+<div class="text-center mb-12">
+<h2 class="text-[24px] font-bold text-on-surface mb-2">Your Path to Mastery</h2>
 </div>
-<h2 class="font-display text-display text-on-primary mb-6">Ready to ace your next round?</h2>
-<p class="font-body-lg text-on-primary-container mb-12 max-w-xl mx-auto opacity-90">Start building your structured interview preparation today.</p>
-<div class="flex flex-col sm:flex-row gap-4 justify-center">
-<a href="{{ route('register') }}" class="bg-on-primary text-primary px-10 py-5 rounded-xl font-headline-md shadow-xl hover:bg-primary-fixed transition-colors">Start Free Trial</a>
-<a href="{{ route('register') }}" class="bg-primary-container text-on-primary-container px-10 py-5 rounded-xl font-headline-md border border-on-primary-container/30 hover:bg-primary/80 transition-colors">Compare Plans</a>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<div class="text-center">
+<div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">map</span>
+</div>
+<h4 class="text-[14px] font-semibold text-on-surface mb-1">1. Define Domains</h4>
+<p class="text-[12px] text-on-surface-variant">Select the tech stacks you need to master.</p>
+</div>
+<div class="text-center">
+<div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">edit_note</span>
+</div>
+<h4 class="text-[14px] font-semibold text-on-surface mb-1">2. Create Concepts</h4>
+<p class="text-[12px] text-on-surface-variant">Write explanations for each topic.</p>
+</div>
+<div class="text-center">
+<div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">auto_awesome</span>
+</div>
+<h4 class="text-[14px] font-semibold text-on-surface mb-1">3. Generate AI Questions</h4>
+<p class="text-[12px] text-on-surface-variant">Practice with tailored interview questions.</p>
+</div>
+<div class="text-center">
+<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+<span class="material-symbols-outlined text-white text-[20px]">celebration</span>
+</div>
+<h4 class="text-[14px] font-semibold text-on-surface mb-1">4. Land the Job</h4>
+<p class="text-[12px] text-on-surface-variant">Approach interviews with confidence.</p>
 </div>
 </div>
+</div>
+</section>
+<section class="py-16 bg-gradient-to-br from-primary to-primary-light text-white relative overflow-hidden">
+<div class="absolute inset-0 opacity-10">
+<svg class="w-full h-full" viewBox="0 0 800 400" fill="none"><circle cx="400" cy="200" r="150" stroke="white" stroke-width="0.5"/><circle cx="400" cy="200" r="100" stroke="white" stroke-width="0.5"/></svg>
+</div>
+<div class="max-w-2xl mx-auto px-6 md:px-12 text-center relative z-10">
+<h2 class="text-[28px] font-bold mb-3">Ready to ace your next round?</h2>
+<p class="text-[14px] text-white/70 mb-6">Start building your structured interview preparation today.</p>
+<a href="{{ route('register') }}" class="inline-flex items-center gap-1.5 bg-white text-primary px-5 py-2.5 rounded-lg text-[14px] font-medium hover:bg-white/90 transition-all">
+Start Free
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
 </div>
 </section>
 </main>
-<!-- Footer -->
-<footer class="w-full py-stack-lg px-margin-x flex flex-col md:flex-row justify-between items-center gap-stack-md max-w-container-max mx-auto bg-surface-container-lowest dark:bg-inverse-surface border-t border-outline-variant dark:border-outline">
-<div class="flex flex-col items-center md:items-start gap-4">
-<span class="font-display text-headline-md font-bold text-primary dark:text-primary-fixed-dim">InterviewPrep</span>
-<p class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant">© 2024 InterviewPrep. Engineered for mastery.</p>
+<footer class="py-6 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-white border-t border-outline-variant/30">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[14px]" style="font-variation-settings: 'FILL' 1;">school</span>
 </div>
-<div class="flex gap-8">
-<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
-<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all opacity-80 hover:opacity-100" href="#">Terms of Service</a>
-<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all opacity-80 hover:opacity-100" href="#">Github</a>
-<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim underline transition-all opacity-80 hover:opacity-100" href="#">Status</a>
+<span class="text-[13px] font-medium text-on-surface-variant">© 2026 InterviewPrep</span>
+</div>
+<div class="flex gap-4">
+<a class="text-[12px] text-on-surface-variant/60 hover:text-primary transition-colors" href="#">Privacy</a>
+<a class="text-[12px] text-on-surface-variant/60 hover:text-primary transition-colors" href="#">Terms</a>
 </div>
 </footer>
-</body></html>
+</body>
+</html>

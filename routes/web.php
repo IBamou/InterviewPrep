@@ -49,9 +49,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/domains/{domain}/concepts/create', [ConceptController::class, 'create'])->name('concepts.create');
     Route::post('/domains/{domain}/concepts', [ConceptController::class, 'store'])->name('concepts.store');
     Route::get('/concepts/{concept}', [ConceptController::class, 'show'])->name('concepts.show');
+    Route::get('/concepts/{concept}/practice', [ConceptController::class, 'practice'])->name('concepts.practice');
     Route::get('/concepts/{concept}/edit', [ConceptController::class, 'edit'])->name('concepts.edit');
     Route::put('/concepts/{concept}', [ConceptController::class, 'update'])->name('concepts.update');
     Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.updateStatus');
+    Route::post('/concepts/{concept}/generate-questions', [ConceptController::class, 'generateQuestions'])->name('concepts.generateQuestions');
+    Route::post('/concepts/{concept}/submit-answers', [ConceptController::class, 'submitAnswers'])->name('concepts.submitAnswers');
     Route::delete('/concepts/{concept}', [ConceptController::class, 'archive'])->name('concepts.archive');
     Route::post('/concepts/{concept}/restore', [ConceptController::class, 'restore'])->name('concepts.restore')->withTrashed('concept');
     Route::delete('/concepts/{concept}/force', [ConceptController::class, 'forceDelete'])->name('concepts.forceDelete')->withTrashed('concept');

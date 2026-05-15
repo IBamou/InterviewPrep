@@ -7,6 +7,9 @@ use App\Http\Requests\StoreConceptRequest;
 use App\Http\Requests\UpdateConceptRequest;
 use App\Models\Concept;
 use App\Models\Domain;
+use App\Models\GeneratedQuestion;
+use App\Services\GroqService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ConceptController extends Controller
@@ -35,11 +38,49 @@ class ConceptController extends Controller
     {
         $this->authorize('view', $concept);
 
-        $concept->load(['domain' => function ($query) {
-            $query->withCount('concepts');
-        }]);
+        $concept->load([
+            'domain' => function ($query) {
+                $query->withCount('concepts');
+            },
+            'generatedQuestions',
+        ]);
 
-        return view('concepts.show', compact('concept'));
+        $questionSets = $concept->generatedQuestions
+            ->groupBy('set_number')
+            ->sortKeys();
+
+        return view('concepts.show', compact('concept', 'questionSets'));
+    }
+
+    public function practice(Concept $concept, Request $request)
+    {
+        $this->authorize('view', $concept);
+
+        $concept->load('domain');
+
+        $questionSets = $concept->generatedQuestions()
+            ->orderBy('set_number')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('set_number');
+
+        $setNumbers = $questionSets->keys()->values()->toArray();
+        $totalPages = max(1, count($setNumbers));
+        $currentPage = (int) $request->query('page', 1);
+        $currentPage = min(max(1, $currentPage), $totalPages);
+
+        $currentSetNumber = $setNumbers[$currentPage - 1] ?? null;
+        $currentSet = $currentSetNumber ? $questionSets->get($currentSetNumber) : collect();
+
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentSetNumber ? [$currentSetNumber => $currentSet] : [],
+            $totalPages,
+            1,
+            $currentPage,
+            ['path' => $request->url()]
+        );
+
+        return view('concepts.practice', compact('concept', 'questionSets', 'currentSet', 'currentSetNumber', 'paginator', 'totalPages', 'setNumbers'));
     }
 
     public function edit(Concept $concept)
@@ -95,6 +136,90 @@ class ConceptController extends Controller
         $concept->forceDelete();
 
         return redirect()->route('concepts.archives', $concept->domain_id)->with('success', 'Concept permanently deleted.');
+    }
+
+    public function generateQuestions(Concept $concept, GroqService $groq)
+    {
+        $this->authorize('view', $concept);
+
+        $concept->load('domain');
+
+        if (!$concept->domain_id || !$concept->domain) {
+            return back()->with('error', 'Cannot generate questions: this concept is not linked to a domain.');
+        }
+
+        try {
+            $questions = $groq->generateQuestions($concept);
+
+            if (isset($questions['error']) && $questions['error'] === 'unrelated') {
+                return back()->with('error', $questions['message'] ?? 'The concept is not relevant to this domain.');
+            }
+
+            $maxSet = $concept->generatedQuestions()->max('set_number') ?? 0;
+            $setNumber = $maxSet + 1;
+
+            foreach ($questions as $question) {
+                GeneratedQuestion::create([
+                    'concept_id' => $concept->id,
+                    'question' => $question,
+                    'set_number' => $setNumber,
+                ]);
+            }
+
+            return redirect()->route('concepts.practice', $concept)->with('success', "Set {$setNumber}: 5 interview questions generated successfully.");
+        } catch (\RuntimeException $e) {
+            return back()->with('error', 'Failed to generate questions: ' . $e->getMessage());
+        }
+    }
+
+    public function submitAnswers(Request $request, Concept $concept, GroqService $groq)
+    {
+        $this->authorize('view', $concept);
+
+        $concept->load('domain');
+
+        if (!$concept->domain_id || !$concept->domain) {
+            return back()->with('error', 'Cannot evaluate answers: this concept is not linked to a domain.');
+        }
+
+        $data = $request->validate([
+            'answers' => 'required|array|min:1',
+            'answers.*.question_id' => 'required|exists:generated_questions,id',
+            'answers.*.answer' => 'nullable|string|max:10000',
+        ]);
+
+        try {
+            $qaPairs = [];
+            foreach ($data['answers'] as $item) {
+                $question = GeneratedQuestion::findOrFail($item['question_id']);
+                $question->update(['answer' => $item['answer'] ?? '']);
+                $qaPairs[] = [
+                    'question_id' => $item['question_id'],
+                    'question' => $question->question,
+                    'answer' => $item['answer'] ?? '',
+                ];
+            }
+
+            $evaluations = $groq->evaluateAnswers($concept, $qaPairs);
+
+            foreach ($evaluations as $eval) {
+                $idx = $eval['question_index'] ?? null;
+                if ($idx !== null && isset($qaPairs[$idx])) {
+                    $gq = GeneratedQuestion::find($qaPairs[$idx]['question_id']);
+                    if ($gq) {
+                        $gq->update([
+                            'rating' => $eval['rating'] ?? null,
+                            'feedback' => $eval['feedback'] ?? null,
+                            'model_answer' => $eval['model_answer'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            return redirect()->route('concepts.practice', $concept)->with('success', 'Answers evaluated successfully!');
+        } catch (\RuntimeException $e) {
+            return back()->with('error', 'Failed to evaluate answers: ' . $e->getMessage());
+        }
     }
 
     public function archives(Domain $domain)

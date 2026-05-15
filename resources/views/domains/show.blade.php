@@ -1,133 +1,134 @@
-<x-app-layout activeNav="domains" title="{{ $domain->name }} Mastery">
+<x-app-layout activeNav="domains" title="{{ $domain->name }}">
     <x-slot:topbar-actions>
-        <a href="{{ route('concepts.create', $domain) }}" class="bg-primary-container text-on-primary-container px-lg py-sm rounded-full font-body-sm font-semibold hover:opacity-90 transition-all">Add New</a>
+        <a href="{{ route('concepts.archives', $domain) }}" class="px-3 py-1.5 bg-surface-container text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container-high transition-all flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">archive</span>
+            Archived Concepts
+        </a>
+        <a href="{{ route('concepts.create', $domain) }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">+ Add Concept</a>
     </x-slot:topbar-actions>
 
-    <div class="mb-xl">
-        <nav class="flex items-center gap-xs font-label-caps text-label-caps text-on-surface-variant mb-md">
-            <a class="hover:text-primary transition-colors" href="{{ route('domains.index') }}">DOMAINS</a>
-            <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span class="text-primary font-bold">{{ strtoupper($domain->name) }}</span>
-        </nav>
-        <div class="flex flex-col md:flex-row justify-between items-end gap-lg">
-            <div class="space-y-xs">
-                <h2 class="font-display-lg text-display-lg text-on-surface">{{ $domain->name }}</h2>
-                <p class="font-body-md text-body-md text-on-surface-variant max-w-lg">{{ $domain->description ?? 'No description provided.' }}</p>
+    <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
+        <a class="hover:text-primary transition-colors" href="{{ route('domains.index') }}">Domains</a>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="text-on-surface font-medium">{{ $domain->name }}</span>
+    </nav>
+
+    <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+        <div>
+            <h2 class="font-display-lg text-display-lg text-on-surface">{{ $domain->name }}</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant/70 mt-0.5">{{ $domain->description ?? 'No description provided.' }}</p>
+        </div>
+        <div class="w-full md:w-56">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-[11px] text-on-surface-variant/60 font-medium uppercase">Progress</span>
+                <span class="text-[14px] font-bold text-primary">{{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%</span>
             </div>
-            <div class="w-full md:w-64 space-y-sm">
-                <div class="flex justify-between items-center font-label-caps text-label-caps">
-                    <span class="text-on-surface-variant">DOMAIN PROGRESS</span>
-                    <span class="text-primary font-bold">{{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%</span>
-                </div>
-                <div class="h-2 w-full bg-outline-variant rounded-full overflow-hidden">
-                    <div class="h-full bg-primary-container w-[{{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%] rounded-full"></div>
-                </div>
+            <div class="h-2 w-full bg-surface-container rounded-full">
+                <div class="h-full bg-primary rounded-full transition-all" style="width: {{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%"></div>
             </div>
         </div>
     </div>
 
-    <section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-        <div class="px-lg py-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-            <h3 class="font-title-lg text-title-lg text-on-surface">Core Concepts</h3>
-            <div class="flex items-center gap-sm">
-                <span class="material-symbols-outlined text-on-surface-variant">filter_list</span>
-                <span class="font-label-caps text-label-caps text-on-surface-variant">FILTER BY STATUS</span>
-            </div>
+    <section class="bg-white border border-outline-variant/50 rounded-xl overflow-hidden mb-6">
+        <div class="px-4 py-3 border-b border-outline-variant/30 flex justify-between items-center">
+            <h3 class="text-[14px] font-semibold text-on-surface">Concepts</h3>
+            <span class="bg-primary/10 text-primary text-[11px] font-medium px-2 py-0.5 rounded-full">{{ $domain->concepts_count }}</span>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-surface-container-low">
-                        <th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant">TITLE & PREVIEW</th>
-                        <th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant">DIFFICULTY</th>
-                        <th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant">STATUS</th>
-                        <th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant">LAST ACTIVITY</th>
-                        <th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant text-right">ACTIONS</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-outline-variant">
-                    @forelse ($domain->concepts as $concept)
-                    @php
-                    $dc = ['junior' => 'border-secondary text-secondary bg-secondary/10', 'mid' => 'border-on-tertiary-fixed-variant text-on-tertiary-fixed-variant', 'senior' => 'border-error text-error'];
-                    $sc = ['to_review' => 'bg-error-container/20 text-secondary font-bold', 'in_progress' => 'bg-primary-fixed text-on-primary-fixed-variant', 'mastered' => 'bg-secondary-container/20 text-secondary font-bold'];
-                    $sl = ['to_review' => 'To Review', 'in_progress' => 'In Progress', 'mastered' => 'Mastered'];
-                    @endphp
-                    <tr class="hover:bg-background transition-colors group">
-                        <td class="px-lg py-lg">
-                            <div class="flex flex-col gap-1">
-                                <a href="{{ route('concepts.show', $concept) }}" class="font-body-md font-bold text-on-surface hover:text-primary transition-colors">{{ $concept->title }}</a>
-                                <span class="font-body-sm text-on-surface-variant line-clamp-1 italic">{{ Str::limit($concept->explanation, 50) }}</span>
-                            </div>
-                        </td>
-                        <td class="px-lg py-lg">
-                            <span class="inline-block px-sm py-1 border border-outline-variant rounded font-label-caps text-[10px] uppercase {{ $dc[$concept->difficulty->value] ?? '' }}">{{ ucfirst($concept->difficulty->value) }}</span>
-                        </td>
-                        <td class="px-lg py-lg">
-                            <span class="inline-flex items-center px-sm py-1 rounded-full font-label-caps text-[11px] font-bold {{ $sc[$concept->status->value] ?? '' }}">
-                                <span class="w-1.5 h-1.5 rounded-full mr-2 {{ $concept->status->value === 'to_review' ? 'bg-error' : ($concept->status->value === 'mastered' ? 'bg-secondary' : 'bg-primary-container') }}"></span>
-                                {{ $sl[$concept->status->value] ?? $concept->status->label() }}
-                            </span>
-                        </td>
-                        <td class="px-lg py-lg font-body-sm text-on-surface-variant">{{ $concept->updated_at->diffForHumans() }}</td>
-                        <td class="px-lg py-lg text-right">
-                            <a href="{{ route('concepts.show', $concept) }}" class="text-primary font-bold font-label-caps hover:underline">VIEW DETAILS</a>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="px-lg py-12 text-center text-on-surface-variant">
-                            No concepts in this domain yet. <a href="{{ route('concepts.create', $domain) }}" class="text-primary font-bold hover:underline">Create one</a>.
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="divide-y divide-outline-variant/20">
+            @forelse ($domain->concepts as $concept)
+            @php
+            $statusColors = ['to_review' => ['dot' => 'bg-error', 'text' => 'text-error', 'bg' => 'bg-error/5'], 'in_progress' => ['dot' => 'bg-amber-500', 'text' => 'text-amber-600', 'bg' => 'bg-amber-50'], 'mastered' => ['dot' => 'bg-secondary', 'text' => 'text-secondary', 'bg' => 'bg-secondary/5']];
+            $diffColors = ['junior' => 'text-secondary', 'mid' => 'text-amber-600', 'senior' => 'text-error'];
+            $diffLabels = ['junior' => 'Junior', 'mid' => 'Mid', 'senior' => 'Senior'];
+            $statusLabels = ['to_review' => 'To Review', 'in_progress' => 'In Progress', 'mastered' => 'Mastered'];
+            $sc = $statusColors[$concept->status->value];
+            @endphp
+            <a href="{{ route('concepts.show', $concept) }}" class="px-4 py-3 flex items-center gap-4 hover:bg-surface-container/50 transition-all group">
+                <div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                    <span class="material-symbols-outlined text-on-surface-variant/50 group-hover:text-primary text-[16px] transition-colors">description</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[13px] font-medium text-on-surface group-hover:text-primary transition-colors truncate">{{ $concept->title }}</div>
+                    <div class="text-[12px] text-on-surface-variant/50 line-clamp-1 mt-0.5">{{ Str::limit($concept->explanation, 50) }}</div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <span class="text-[10px] font-medium {{ $diffColors[$concept->difficulty->value] ?? '' }}">{{ $diffLabels[$concept->difficulty->value] ?? '' }}</span>
+                    <span class="flex items-center gap-1.5 {{ $sc['text'] }} {{ $sc['bg'] }} px-2 py-0.5 rounded text-[10px] font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $sc['dot'] }}"></span>
+                        {{ $statusLabels[$concept->status->value] ?? $concept->status->label() }}
+                    </span>
+                    <span class="text-[11px] text-on-surface-variant/40 hidden md:block">{{ $concept->updated_at->diffForHumans() }}</span>
+                    <span class="material-symbols-outlined text-outline-variant/50 group-hover:text-primary transition-colors text-[16px]">chevron_right</span>
+                </div>
+            </a>
+            @empty
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center mb-3">
+                    <span class="material-symbols-outlined text-primary text-[24px]">library_books</span>
+                </div>
+                <h4 class="text-[14px] font-medium text-on-surface mb-1">No concepts yet</h4>
+                <p class="text-[12px] text-on-surface-variant/60 mb-3">Add your first concept to start learning.</p>
+                <a href="{{ route('concepts.create', $domain) }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all inline-flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">add</span>
+                    Add Concept
+                </a>
+            </div>
+            @endforelse
         </div>
     </section>
 
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mt-xl">
-        <div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm space-y-md">
-            <div class="flex items-center justify-between">
-                <h4 class="font-title-lg text-title-lg">Focus Area</h4>
-                <span class="material-symbols-outlined text-primary">analytics</span>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white border border-outline-variant/50 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="text-[13px] font-semibold text-on-surface">Mastery</h4>
+                <span class="material-symbols-outlined text-primary text-[18px]">trending_up</span>
             </div>
-            <div class="space-y-md">
-                <div class="space-y-xs">
-                    <div class="flex justify-between text-label-caps font-label-caps">
-                        <span class="text-on-surface-variant">Consistency Models</span>
-                        <span>{{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%</span>
-                    </div>
-                    <div class="h-1.5 bg-outline-variant rounded-full overflow-hidden">
-                        <div class="h-full bg-primary-container w-[{{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%]"></div>
-                    </div>
+            <div class="flex items-baseline gap-2 mb-2">
+                <span class="text-2xl font-bold text-primary">{{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%</span>
+                <span class="text-[12px] text-on-surface-variant/60">{{ $domain->mastered_count }}/{{ $domain->concepts_count }}</span>
+            </div>
+            <div class="h-1.5 bg-surface-container rounded-full">
+                <div class="h-full bg-primary rounded-full transition-all" style="width: {{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%"></div>
+            </div>
+        </div>
+        <div class="bg-gradient-to-br from-primary to-primary-container rounded-xl p-4 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-bl-full -mr-4 -mt-4"></div>
+            <div class="relative z-10">
+                <h4 class="text-[13px] font-semibold mb-1">AI Questions</h4>
+                <p class="text-[12px] text-white/70 mb-3">Generate practice questions from your concepts.</p>
+                @php $firstConcept = $domain->concepts->first(); @endphp
+                @if ($firstConcept)
+                <a href="{{ route('concepts.show', $firstConcept) }}" class="inline-flex items-center gap-1 bg-white text-primary px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-white/90 transition-all">
+                    Start
+                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </a>
+                @else
+                <span class="inline-flex items-center gap-1 bg-white/30 text-white/50 px-3 py-1.5 rounded-lg text-[12px] font-medium cursor-not-allowed">
+                    No concepts yet
+                </span>
+                @endif
+            </div>
+        </div>
+        <div class="bg-white border border-outline-variant/50 rounded-xl p-4">
+            <h4 class="text-[13px] font-semibold text-on-surface mb-3">Overview</h4>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="p-2.5 bg-primary/5 rounded-lg">
+                    <div class="text-[16px] font-bold text-primary">{{ $domain->concepts_count }}</div>
+                    <div class="text-[10px] text-on-surface-variant/60 font-medium">Total</div>
+                </div>
+                <div class="p-2.5 bg-secondary/5 rounded-lg">
+                    <div class="text-[16px] font-bold text-secondary">{{ $domain->mastered_count }}</div>
+                    <div class="text-[10px] text-on-surface-variant/60 font-medium">Mastered</div>
+                </div>
+                <div class="p-2.5 bg-amber-50 rounded-lg">
+                    <div class="text-[16px] font-bold text-amber-600">{{ $domain->concepts->where('status', 'in_progress')->count() }}</div>
+                    <div class="text-[10px] text-on-surface-variant/60 font-medium">In Progress</div>
+                </div>
+                <div class="p-2.5 bg-error/5 rounded-lg">
+                    <div class="text-[16px] font-bold text-error">{{ $domain->concepts->where('status', 'to_review')->count() }}</div>
+                    <div class="text-[10px] text-on-surface-variant/60 font-medium">To Review</div>
                 </div>
             </div>
         </div>
-        <div class="relative overflow-hidden bg-primary-container text-on-primary p-lg rounded-xl shadow-sm flex flex-col justify-between min-h-[200px]">
-            <div class="z-10 space-y-xs">
-                <h4 class="font-title-lg text-title-lg text-white">Daily Mock Exam</h4>
-                <p class="font-body-sm text-on-primary-container/80">Simulate a real-world architect interview session.</p>
-            </div>
-            <div class="z-10">
-                <a href="{{ route('concepts.create', $domain) }}" class="bg-white text-primary-container font-bold px-lg py-sm rounded-lg hover:bg-primary-fixed transition-colors inline-block">Add Concept</a>
-            </div>
-        </div>
-        <div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-sm space-y-md">
-            <h4 class="font-title-lg text-title-lg">Study Overview</h4>
-            <div class="grid grid-cols-2 gap-md">
-                <div class="p-md bg-background rounded-lg border border-outline-variant">
-                    <div class="font-display-lg text-primary text-[28px] leading-tight">{{ $domain->concepts_count }}</div>
-                    <div class="font-label-caps text-label-caps text-on-surface-variant">CONCEPTS</div>
-                </div>
-                <div class="p-md bg-background rounded-lg border border-outline-variant">
-                    <div class="font-display-lg text-secondary text-[28px] leading-tight">{{ $domain->mastered_count }}</div>
-                    <div class="font-label-caps text-label-caps text-on-surface-variant">MASTERED</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <a href="{{ route('concepts.create', $domain) }}" class="fixed bottom-xl right-xl w-14 h-14 bg-primary-container text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50">
-        <span class="material-symbols-outlined text-[32px]">add</span>
-    </a>
+    </div>
 </x-app-layout>
