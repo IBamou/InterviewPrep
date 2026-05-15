@@ -37,8 +37,9 @@
                         "on-tertiary": "#ffffff",
                         "on-secondary-fixed": "#002113",
                         "on-tertiary-container": "#ffd4a4",
-                        "primary": "#3525cd",
-                        "secondary-container": "#6cf8bb",
+"primary": "#1e00a9",
+                    "primary-container": "#3525cd",
+                    "on-primary-container": "#b1afff",
                         "outline-variant": "#c7c4d8",
                         "on-primary-fixed-variant": "#3323cc",
                         "error": "#ba1a1a",
@@ -126,12 +127,12 @@
 </div>
 <div class="grid grid-cols-2 gap-gutter">
 <div class="p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-<p class="font-headline-md text-headline-md text-secondary-fixed mb-1">2.4k+</p>
-<p class="font-label-md text-label-md text-on-primary-container">Curated Challenges</p>
+<p class="font-headline-md text-headline-md text-secondary-fixed mb-1">--</p>
+<p class="font-label-md text-label-md text-on-primary-container">Concepts Tracked</p>
 </div>
 <div class="p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-<p class="font-headline-md text-headline-md text-secondary-fixed mb-1">98%</p>
-<p class="font-label-md text-label-md text-on-primary-container">Placement Rate</p>
+<p class="font-headline-md text-headline-md text-secondary-fixed mb-1">--</p>
+<p class="font-label-md text-label-md text-on-primary-container">Mastery Rate</p>
 </div>
 </div>
 </div>

@@ -133,9 +133,9 @@
 <section class="relative overflow-hidden py-24 md:py-32 bg-surface">
 <div class="max-w-container-max mx-auto px-margin-x grid md:grid-cols-2 gap-12 items-center">
 <div class="relative z-10">
-<span class="inline-block px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-md text-[12px] mb-6">NEW: AI MOCK INTERVIEWS</span>
+<span class="inline-block px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-md text-[12px] mb-6">STRUCTURED INTERVIEW PREP</span>
 <h1 class="font-display text-display text-on-surface mb-6 leading-tight">Master the <span class="text-primary">Technical Interview.</span></h1>
-<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-lg">The AI-powered workspace to structure your knowledge, track progress, and ace your next Laravel or backend role.</p>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-lg">Structure your knowledge, track progress with manual concepts, and generate AI-powered interview questions to ace your next Laravel or backend role.</p>
 <div class="flex flex-wrap gap-4">
 <a href="{{ route('register') }}" class="bg-primary text-on-primary px-8 py-4 rounded-xl font-headline-md active:scale-95 transition-transform duration-150 shadow-lg shadow-primary/20">Get Started for Free</a>
 <a href="#" class="border border-outline-variant text-on-surface px-8 py-4 rounded-xl font-headline-md active:scale-95 transition-transform duration-150 hover:bg-surface-container-low">Watch Demo</a>
@@ -188,8 +188,8 @@
 <div class="flex flex-col md:flex-row gap-10 items-center">
 <div class="flex-1">
 <span class="material-symbols-outlined text-primary text-4xl mb-6">neurology</span>
-<h3 class="font-display text-headline-md text-on-surface mb-4">AI Concept Generator</h3>
-<p class="font-body-md text-on-surface-variant">Turn abstract topics into structured study guides. Our AI parses complex documentation to create digestible, interview-ready modules for any framework.</p>
+<h3 class="font-display text-headline-md text-on-surface mb-4">Manual Concept Tracking</h3>
+<p class="font-body-md text-on-surface-variant">Define your own technical concepts with personal explanations. Build a custom knowledge base tailored to your interview preparation needs.</p>
 </div>
 <div class="flex-1 w-full bg-surface-container h-48 rounded-lg overflow-hidden flex items-center justify-center p-6 border border-outline-variant/30">
 <div class="w-full space-y-3">
@@ -220,12 +220,12 @@
 <p class="font-body-md text-surface-variant mb-8">Visualize your growth with dynamic heatmaps and automated mastery scores. Know exactly where you stand before the recruiter calls.</p>
 <div class="flex gap-4">
 <div class="bg-surface/10 p-4 rounded-lg flex-1">
-<div class="text-headline-md font-bold text-secondary-fixed">244</div>
+<div class="text-headline-md font-bold text-secondary-fixed">--</div>
 <div class="text-label-md text-surface-variant/70">Concepts Mastered</div>
 </div>
 <div class="bg-surface/10 p-4 rounded-lg flex-1">
-<div class="text-headline-md font-bold text-tertiary-fixed">12</div>
-<div class="text-label-md text-surface-variant/70">Mock Interviews</div>
+<div class="text-headline-md font-bold text-tertiary-fixed">--</div>
+<div class="text-label-md text-surface-variant/70">AI Questions Generated</div>
 </div>
 </div>
 </div>
@@ -253,18 +253,18 @@
 <!-- Step 2 -->
 <div class="relative z-10 flex-1 text-center">
 <div class="w-24 h-24 bg-surface-container-highest border-4 border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-<span class="material-symbols-outlined text-primary text-3xl">auto_awesome</span>
+<span class="material-symbols-outlined text-primary text-3xl">edit_note</span>
 </div>
-<h4 class="font-display text-headline-md mb-2">2. Generate Concepts</h4>
-<p class="font-body-md text-on-surface-variant px-4">Our AI builds a custom curriculum tailored to current industry standards.</p>
+<h4 class="font-display text-headline-md mb-2">2. Create Concepts</h4>
+<p class="font-body-md text-on-surface-variant px-4">Write your own explanations for each technical topic. Define what matters for your interview journey.</p>
 </div>
 <!-- Step 3 -->
 <div class="relative z-10 flex-1 text-center">
 <div class="w-24 h-24 bg-surface-container-highest border-4 border-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
 <span class="material-symbols-outlined text-primary text-3xl">terminal</span>
 </div>
-<h4 class="font-display text-headline-md mb-2">3. Practice with AI</h4>
-<p class="font-body-md text-on-surface-variant px-4">Interactive coding challenges and mock behavioral rounds with real-time feedback.</p>
+<h4 class="font-display text-headline-md mb-2">3. Generate AI Questions</h4>
+<p class="font-body-md text-on-surface-variant px-4">Generate tailored interview questions from your concepts using AI. Practice answering with confidence.</p>
 </div>
 <!-- Step 4 -->
 <div class="relative z-10 flex-1 text-center">
@@ -293,13 +293,15 @@
 </div>
 </div>
 <blockquote class="font-display text-headline-lg text-on-surface mb-10 leading-snug">
-                            "The most organized way to prepare for senior roles. I stopped guessing what to study and followed the AI's mastery path."
+                            "The most organized way to prepare for technical interviews. I structure my knowledge, track my mastery, and generate custom questions to test myself."
                         </blockquote>
 <div class="flex flex-col items-center">
-<img alt="Software Engineer" class="w-16 h-16 rounded-full mb-4 border-2 border-primary" data-alt="A professional headshot of a software engineer in his late 20s, wearing a clean dark navy sweater." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRdWtxgvZznM6wTxwKkhKNwLy4NfwjUEmEaDKmutdgAfpyf3C9z4iEN0RTweiOC34PJQLersErILMdMU3BmqqOpsN1Ca-MCV-AT3iwP1irfhWjAWizZcNrtyXT9qN2ISxC-FBcWkheo8Y4e_SiJHEt3E_Q3kJcWFNg5MZnEhTlV358CEwMJ3nRZWWauqc0WmQt_PjeOZ1vJTZgE7pVpIBq9VHfYJCIvIAAv_oemjmI5y48qUCWqiU-RfkGIF6oiBWAZ80_Od8OYHE"/>
+<div class="w-16 h-16 rounded-full mb-4 border-2 border-primary bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
 <cite class="not-italic">
-<span class="block font-headline-md text-on-surface">Marcus Thorne</span>
-<span class="block font-label-md text-on-surface-variant">Senior Backend Developer @ CloudScale</span>
+<span class="block font-headline-md text-on-surface">Developers like you</span>
+<span class="block font-label-md text-on-surface-variant">Join the community</span>
 </cite>
 </div>
 </div>
@@ -321,7 +323,7 @@
 </svg>
 </div>
 <h2 class="font-display text-display text-on-primary mb-6">Ready to ace your next round?</h2>
-<p class="font-body-lg text-on-primary-container mb-12 max-w-xl mx-auto opacity-90">Join 10,000+ engineers building their future in tech with InterviewPrep.</p>
+<p class="font-body-lg text-on-primary-container mb-12 max-w-xl mx-auto opacity-90">Start building your structured interview preparation today.</p>
 <div class="flex flex-col sm:flex-row gap-4 justify-center">
 <a href="{{ route('register') }}" class="bg-on-primary text-primary px-10 py-5 rounded-xl font-headline-md shadow-xl hover:bg-primary-fixed transition-colors">Start Free Trial</a>
 <a href="{{ route('register') }}" class="bg-primary-container text-on-primary-container px-10 py-5 rounded-xl font-headline-md border border-on-primary-container/30 hover:bg-primary/80 transition-colors">Compare Plans</a>
