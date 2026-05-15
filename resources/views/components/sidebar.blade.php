@@ -11,7 +11,7 @@
 </div>
 </div>
 </div>
-<nav class="flex flex-col gap-0.5 flex-grow px-3">
+<nav class="flex flex-col gap-2 flex-grow px-3">
 <a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'dashboard' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('dashboard') }}">
 <span class="material-symbols-outlined text-[18px]">dashboard</span>
 Dashboard
@@ -26,7 +26,7 @@ Archives
 </a>
 </nav>
 <div class="px-3 pb-4 mt-auto">
-<div class="border-t border-outline-variant pt-3 space-y-0.5">
+<div class="border-t border-outline-variant pt-3 space-y-2">
 <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
 <span class="material-symbols-outlined text-[18px]">account_circle</span>
 Profile
