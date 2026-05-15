@@ -153,14 +153,14 @@
 </div>
 </div>
 <div class="relative z-10 p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-<p class="text-on-primary-container italic font-body-md mb-4">"The systematic approach to tracking my Laravel knowledge was the key differentiator in landing my Senior role. The AI-generated questions are eerily accurate."</p>
+<p class="text-on-primary-container italic font-body-md mb-4">"I structure my knowledge manually with concepts, track my progress, and generate AI interview questions to prepare with confidence."</p>
 <div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
-<img alt="Professional portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4W1S08WncbljIaNrMW_RcTDwO0WErZQY2-ay6OodiZGQbmplkNZM5d_uuHp5GE0pv0bj-n7XRKNvq2E7aHogRuHMir5tmfJCE0vXf-Mr_N9blhGE-pnusC1J-8JZj7_6Gj_IdfB09yDzGLDyC5m3vkGDVFQ_q7d3TYSpd61bP3j-DvAJ3L4bwSKzM_al1TZ6snU8Q99p_jeSKTLwpgRhwFEDg_9g-P4mL794kgE2ArsCZAnrHQPiE2F1QuqcSr3P8RvVZsrnt6i8"/>
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-fixed-dim">person</span>
 </div>
 <div>
-<p class="text-white font-label-md">Alex Chen</p>
-<p class="text-on-primary-container/60 text-xs">Senior Backend Engineer @ CloudFlow</p>
+<p class="text-white font-label-md">You</p>
+<p class="text-on-primary-container/60 text-xs">Start your journey</p>
 </div>
 </div>
 </div>
@@ -170,7 +170,7 @@
 <div class="w-full max-w-md">
 <div class="mb-10">
 <h2 class="font-headline-lg text-on-surface mb-2">Create your account</h2>
-<p class="text-on-surface-variant text-body-md">Join over 5,000 developers mastering their craft.</p>
+<p class="text-on-surface-variant text-body-md">Start mastering your technical interview preparation.</p>
 </div>
 
 @if ($errors->any())

@@ -18,7 +18,7 @@ it('has working archives link in concept create page', function () {
     $response = $this->actingAs($this->user)->get(route('concepts.create', $domain));
 
     $response->assertStatus(200);
-    $response->assertSee(route('concepts.archives', $domain, absolute: false));
+    $response->assertSee(route('domains.archives', absolute: false));
 });
 
 it('has working archives link in concept show page', function () {
@@ -39,7 +39,7 @@ it('has working archives link in concept show page', function () {
     $response = $this->actingAs($this->user)->get(route('concepts.show', $concept));
 
     $response->assertStatus(200);
-    $response->assertSee(route('concepts.archives', $domain, absolute: false));
+    $response->assertSee(route('domains.archives', absolute: false));
 });
 
 it('has working archives link in concept edit page', function () {
@@ -60,7 +60,7 @@ it('has working archives link in concept edit page', function () {
     $response = $this->actingAs($this->user)->get(route('concepts.edit', $concept));
 
     $response->assertStatus(200);
-    $response->assertSee(route('concepts.archives', $domain, absolute: false));
+    $response->assertSee(route('domains.archives', absolute: false));
 });
 
 it('show page displays concepts count without triggering extra query', function () {
