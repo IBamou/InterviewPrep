@@ -1,69 +1,61 @@
 <x-app-layout activeNav="domains" title="Domains">
     <x-slot:topbar-actions>
-        <a href="{{ route('domains.create') }}" class="px-md py-sm bg-primary-container text-on-primary-container rounded-full font-body-sm font-semibold hover:opacity-90 transition-all">Add New</a>
+        <a href="{{ route('domains.create') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">+ New Domain</a>
         @php $firstDomain = $domains->first(); @endphp
         @if ($firstDomain)
-        <a href="{{ route('concepts.create', $firstDomain) }}" class="px-md py-sm border border-outline-variant text-on-surface rounded-full font-body-sm font-semibold hover:bg-surface-container transition-all">Create Concept</a>
+        <a href="{{ route('concepts.create', $firstDomain) }}" class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">Create Concept</a>
         @endif
     </x-slot:topbar-actions>
 
-    <div class="mb-xl flex flex-col md:flex-row justify-between items-start md:items-end gap-lg">
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h2 class="font-display-lg text-display-lg text-on-surface">Domains</h2>
-            <p class="font-body-md text-body-md text-on-surface-variant">Your specialized knowledge areas and technical mastery paths.</p>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Your knowledge areas and mastery paths</p>
         </div>
-        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm flex flex-col gap-sm min-w-[240px]">
-            <div class="flex justify-between items-center">
-                <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Total Progress</span>
-                <span class="font-title-lg text-title-lg text-primary">{{ $domains->sum('concepts_count') > 0 ? round(($domains->sum('mastered_count') / $domains->sum('concepts_count')) * 100) : 0 }}%</span>
+        <div class="bg-white border border-outline-variant/50 rounded-lg px-3 py-2 flex items-center gap-3">
+            <span class="text-[11px] font-medium text-on-surface-variant/60 uppercase">Progress</span>
+            <span class="text-[14px] font-bold text-primary">{{ $domains->sum('concepts_count') > 0 ? round(($domains->sum('mastered_count') / $domains->sum('concepts_count')) * 100) : 0 }}%</span>
+            <div class="w-20 bg-surface-container h-1.5 rounded-full">
+                <div class="bg-primary h-full rounded-full" style="width: {{ $domains->sum('concepts_count') > 0 ? round(($domains->sum('mastered_count') / $domains->sum('concepts_count')) * 100) : 0 }}%"></div>
             </div>
-            <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-                <div class="bg-primary h-full rounded-full" style="width: {{ $domains->sum('concepts_count') > 0 ? round(($domains->sum('mastered_count') / $domains->sum('concepts_count')) * 100) : 0 }}%;"></div>
-            </div>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">{{ $domains->sum('concepts_count') }} interview modules</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         @forelse ($domains as $domain)
         @php $pct = $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0; @endphp
-        <article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg shadow-sm hover:shadow-md hover:border-primary-fixed transition-all flex flex-col gap-md group">
-            <div class="flex justify-between items-start">
-                <div class="w-12 h-12 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container">
-                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">layers</span>
+        <a href="{{ route('domains.show', $domain) }}" class="bg-white border border-outline-variant/50 rounded-xl p-4 hover:shadow-md hover:border-primary/30 transition-all group block">
+            <div class="flex items-start justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-primary-container/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">layers</span>
                 </div>
-                <span class="px-sm py-xs bg-secondary/10 text-secondary border border-secondary/20 rounded font-label-caps text-label-caps">L{{ $pct >= 70 ? '3' : ($pct >= 40 ? '2' : '1') }} Mastery</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold {{ $pct >= 70 ? 'bg-secondary/10 text-secondary' : ($pct >= 40 ? 'bg-amber-50 text-amber-600' : 'bg-surface-container text-on-surface-variant') }}">
+                    {{ $pct >= 70 ? 'Advanced' : ($pct >= 40 ? 'Intermediate' : 'Beginner') }}
+                </span>
             </div>
-            <div>
-                <h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">{{ $domain->name }}</h3>
-                <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">{{ Str::limit($domain->description, 80) ?: 'No description provided.' }}</p>
-            </div>
-            <div class="mt-auto pt-md flex flex-col gap-sm">
-                <div class="flex justify-between items-center font-label-caps text-label-caps text-on-surface-variant">
-                    <span>Progress</span>
-                    <span>{{ $pct }}%</span>
+            <h3 class="text-[15px] font-semibold text-on-surface group-hover:text-primary transition-colors mb-1">{{ $domain->name }}</h3>
+            <p class="text-[13px] text-on-surface-variant/70 leading-relaxed mb-3">{{ Str::limit($domain->description, 70) ?: 'No description.' }}</p>
+            <div class="flex items-center justify-between pt-3 border-t border-outline-variant/30">
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-on-surface-variant/60">{{ $domain->concepts_count }} concept{{ $domain->concepts_count !== 1 ? 's' : '' }}</span>
                 </div>
-                <div class="w-full bg-surface-container-high h-1.5 rounded-full">
-                    <div class="bg-secondary h-full rounded-full" style="width: {{ $pct }}%;"></div>
-                </div>
-                <a class="flex items-center gap-xs font-title-lg text-title-lg text-primary mt-sm group-hover:translate-x-1 transition-transform" href="{{ route('domains.show', $domain) }}">
-                    Continue <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </a>
+                <span class="text-[12px] font-medium text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                    Open
+                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </span>
             </div>
-        </article>
+        </a>
         @empty
-        <div class="lg:col-span-3 relative overflow-hidden rounded-xl border border-dashed border-primary/40 p-8 flex flex-col items-center justify-center text-center bg-primary/5 min-h-[400px]">
-            <div class="relative z-10">
-                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 mx-auto">
-                    <span class="material-symbols-outlined text-primary text-3xl">library_add</span>
-                </div>
-                <h3 class="font-headline-md text-headline-md text-primary mb-2">No domains created yet</h3>
-                <p class="text-on-surface-variant max-w-md mx-auto mb-8 font-body-md">Start organizing your interview prep by creating your first knowledge domain.</p>
-                <a href="{{ route('domains.create') }}" class="bg-primary-container text-on-primary-container px-xl py-md rounded-xl font-title-lg text-title-lg shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-md">
-                    <span class="material-symbols-outlined">add_circle</span>
-                    Create Your First Domain
-                </a>
+        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-primary text-[28px]">library_add</span>
             </div>
+            <h3 class="text-[16px] font-semibold text-on-surface mb-1">No domains yet</h3>
+            <p class="text-[13px] text-on-surface-variant/60 max-w-xs mb-4">Create your first knowledge domain to start organizing your interview prep.</p>
+            <a href="{{ route('domains.create') }}" class="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all inline-flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">add</span>
+                Create Domain
+            </a>
         </div>
         @endforelse
     </div>

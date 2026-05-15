@@ -1,31 +1,43 @@
 @props(['activeNav' => 'dashboard'])
-<aside class="fixed left-0 top-0 h-screen w-48 z-40 bg-surface-container-lowest border-r border-outline-variant shadow-sm flex flex-col py-lg px-md gap-xl">
-<div>
-<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">InterviewPrep</h1>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Knowledge Tracker</p>
+<aside class="fixed left-0 top-0 h-screen w-56 z-40 bg-white border-r border-outline-variant flex flex-col">
+<div class="px-5 pt-6 pb-4">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[18px]" style="font-variation-settings: 'FILL' 1;">school</span>
 </div>
-<nav class="flex flex-col gap-sm flex-grow">
-<a class="flex items-center gap-md p-md {{ $activeNav === 'dashboard' ? 'text-primary font-semibold bg-primary-fixed rounded-lg scale-95 active:scale-90 transition-transform' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 rounded-lg' }}" href="{{ route('dashboard') }}">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="font-body-sm text-body-sm">Dashboard</span>
+<div>
+<h1 class="text-[15px] font-bold text-on-surface tracking-tight">InterviewPrep</h1>
+<p class="text-[10px] text-on-surface-variant/70 font-medium">Knowledge Tracker</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-0.5 flex-grow px-3">
+<a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'dashboard' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('dashboard') }}">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+Dashboard
 </a>
-<a class="flex items-center gap-md p-md {{ $activeNav === 'domains' ? 'text-primary font-semibold bg-primary-fixed rounded-lg scale-95 active:scale-90 transition-transform' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 rounded-lg' }}" href="{{ route('domains.index') }}">
-<span class="material-symbols-outlined">account_tree</span>
-<span class="font-body-sm text-body-sm">Domains</span>
+<a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'domains' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('domains.index') }}">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+Domains
 </a>
-<a class="flex items-center gap-md p-md {{ $activeNav === 'archives' ? 'text-primary font-semibold bg-primary-fixed rounded-lg scale-95 active:scale-90 transition-transform' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 rounded-lg' }}" href="{{ route('domains.archives') }}">
-<span class="material-symbols-outlined">inventory_2</span>
-<span class="font-body-sm text-body-sm">Archives</span>
+<a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'archives' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('domains.archives') }}">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+Archives
 </a>
 </nav>
-<div class="mt-auto flex flex-col gap-sm">
-<button class="w-full bg-primary-container text-white py-sm px-md rounded-lg font-semibold scale-95 active:scale-90 transition-transform flex items-center justify-center gap-xs">
-<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
-AI Generator
+<div class="px-3 pb-4 mt-auto">
+<div class="border-t border-outline-variant pt-3 space-y-0.5">
+<a href="{{ route('profile.edit') }}" class="flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined text-[18px]">account_circle</span>
+Profile
+</a>
+<form method="POST" action="{{ route('logout') }}">
+@csrf
+<button type="submit" class="w-full flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium text-error/70 hover:text-error hover:bg-error/5 transition-all">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+Logout
 </button>
-<div class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-lg">
-<span class="material-symbols-outlined">account_circle</span>
-<span class="font-body-sm text-body-sm">Profile</span>
+</form>
 </div>
 </div>
 </aside>

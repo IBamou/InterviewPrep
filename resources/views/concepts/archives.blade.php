@@ -1,60 +1,52 @@
 <x-app-layout activeNav="archives" title="Archived Concepts">
-    <nav class="flex items-center gap-sm mb-lg text-on-surface-variant">
-        <a class="font-body-sm hover:text-primary transition-colors" href="{{ route('domains.show', $domain) }}">{{ $domain->name }}</a>
-        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span class="font-body-sm font-semibold text-on-surface">Archived Concepts</span>
+    <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
+        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $domain) }}">{{ $domain->name }}</a>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="text-on-surface font-medium">Archived</span>
     </nav>
 
-    <div class="flex items-center justify-between mb-xl">
-        <div class="flex items-center gap-md">
-            <h2 class="font-headline-md text-headline-md text-on-surface">Archived Concepts</h2>
-            @if ($concepts->isNotEmpty())
-            <span class="bg-primary-fixed text-on-primary-fixed px-sm py-xs rounded-lg font-label-caps text-label-caps">{{ $concepts->count() }} ITEMS</span>
-            @endif
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="font-display-lg text-display-lg text-on-surface">Archived Concepts</h2>
+            <p class="text-[13px] text-on-surface-variant/60 mt-0.5">Concepts that can be restored or permanently deleted</p>
         </div>
     </div>
-
-    @if (session('success'))
-    <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">{{ session('success') }}</div>
-    @endif
 
     @if ($concepts->isEmpty())
-    <div class="flex flex-col items-center justify-center py-xxl text-center">
-        <div class="w-48 h-48 mb-xl relative">
-            <div class="absolute inset-0 bg-primary/5 rounded-full blur-3xl"></div>
-            <span class="material-symbols-outlined text-[96px] text-primary/30" style="font-variation-settings: 'wght' 200;">inventory_2</span>
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center mb-4">
+            <span class="material-symbols-outlined text-on-surface-variant/30 text-[28px]">inventory_2</span>
         </div>
-        <h3 class="font-headline-md text-headline-md text-on-surface mb-sm">Nothing else in the vault</h3>
-        <p class="max-w-md font-body-md text-body-md text-on-surface-variant mb-xl">Your archive helps keep your active workspace clutter-free. Concepts here are preserved indefinitely and can be restored at any time.</p>
-        <a href="{{ route('domains.show', $domain) }}" class="px-xl py-md bg-white border border-outline-variant text-primary rounded-xl font-body-md font-semibold hover:bg-primary-container hover:text-white transition-all shadow-sm active:scale-95">View All Active Concepts</a>
+        <h3 class="text-[16px] font-semibold text-on-surface mb-1">No archived concepts</h3>
+        <p class="text-[13px] text-on-surface-variant/60 max-w-xs mb-4">Deleted concepts will appear here and can be restored anytime.</p>
+        <a href="{{ route('domains.show', $domain) }}" class="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all inline-flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+            Back to Domain
+        </a>
     </div>
     @else
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg mb-xxl">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         @foreach ($concepts as $concept)
-        @php
-        $dc = ['junior' => 'bg-secondary-container text-on-secondary-container', 'mid' => 'bg-tertiary-fixed text-on-tertiary-fixed-variant', 'senior' => 'border border-error text-error'];
-        @endphp
-        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg card-shadow flex flex-col gap-md hover:translate-y-[-4px] transition-transform duration-300 group">
-            <div class="flex justify-between items-start">
-                <span class="px-sm py-xs {{ $dc[$concept->difficulty->value] ?? '' }} rounded-lg font-label-caps text-label-caps">{{ $domain->name }}</span>
-                <span class="px-sm py-xs border border-outline-variant rounded-lg font-body-sm text-on-tertiary-fixed-variant text-[12px] font-semibold capitalize">{{ $concept->difficulty->value }}</span>
+        <div class="bg-white border border-outline-variant/50 rounded-xl p-4 flex flex-col">
+            <div class="flex items-start justify-between mb-3">
+                <span class="px-2 py-0.5 bg-primary/5 text-primary rounded text-[10px] font-medium">{{ $domain->name }}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-medium {{ $concept->difficulty->value === 'junior' ? 'bg-secondary/10 text-secondary' : ($concept->difficulty->value === 'mid' ? 'bg-amber-50 text-amber-600' : 'bg-error/5 text-error') }}">{{ ucfirst($concept->difficulty->value) }}</span>
             </div>
-            <div>
-                <h3 class="font-title-lg text-title-lg text-on-surface mb-xs">{{ $concept->title }}</h3>
-                <p class="font-body-sm text-on-surface-variant">Archived {{ $concept->deleted_at->diffForHumans() }}</p>
-            </div>
-            <div class="mt-auto pt-md border-t border-outline-variant flex gap-sm">
+            <h3 class="text-[14px] font-semibold text-on-surface mb-1">{{ $concept->title }}</h3>
+            <p class="text-[12px] text-on-surface-variant/40 mb-3">Archived {{ $concept->deleted_at->diffForHumans() }}</p>
+            <div class="pt-3 border-t border-outline-variant/30 flex gap-2 mt-auto">
                 <form method="POST" action="{{ route('concepts.restore', $concept) }}" class="flex-1">
                     @csrf
-                    <button type="submit" class="w-full py-sm border border-outline-variant rounded-lg font-body-sm font-semibold text-on-surface hover:bg-surface-container-high transition-colors flex items-center justify-center gap-sm">
-                        <span class="material-symbols-outlined text-[18px]">restore</span>
+                    <button type="button" onclick="showConfirmModal('Restore Concept', 'Restore this concept?', () => { this.closest('form').submit(); }, 'success')" class="w-full px-3 py-1.5 border border-outline-variant text-on-surface rounded-lg text-[12px] font-medium hover:bg-surface-container transition-all inline-flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">restore</span>
                         Restore
                     </button>
                 </form>
-                <form method="POST" action="{{ route('concepts.forceDelete', $concept) }}" onsubmit="return confirm('Permanently delete this concept?')" class="w-12">
+                <form method="POST" action="{{ route('concepts.forceDelete', $concept) }}" class="flex-1">
                     @csrf @method('delete')
-                    <button type="submit" class="w-full py-sm text-error hover:bg-error-container rounded-lg transition-colors flex items-center justify-center">
-                        <span class="material-symbols-outlined">delete_forever</span>
+                    <button type="button" onclick="showConfirmModal('Delete Concept', 'Permanently delete this concept? This action cannot be undone.', () => { this.closest('form').submit(); })" class="w-full px-3 py-1.5 text-error rounded-lg text-[12px] font-medium hover:bg-error/5 transition-all inline-flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">delete_forever</span>
+                        Delete
                     </button>
                 </form>
             </div>
