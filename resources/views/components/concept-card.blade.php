@@ -10,12 +10,6 @@
         </div>
         <div class="ml-4 flex flex-col items-end gap-2">
             <span class="px-2 py-1 text-xs rounded-full
-                @if($concept->difficulty->value === 'junior') bg-blue-100 text-blue-800
-                @elseif($concept->difficulty->value === 'mid') bg-yellow-100 text-yellow-800
-                @else bg-red-100 text-red-800 @endif">
-                {{ $concept->difficulty->label() }}
-            </span>
-            <span class="px-2 py-1 text-xs rounded-full
                 @if($concept->status->value === 'mastered') bg-green-100 text-green-800
                 @elseif($concept->status->value === 'in_progress') bg-yellow-100 text-yellow-800
                 @else bg-gray-100 text-gray-800 @endif">
@@ -32,12 +26,6 @@
                 Edit
             </a>
         </div>
-        <form action="{{ route('concepts.updateStatus', $concept) }}" method="POST">
-            @csrf
-            @method('PATCH')
-            <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 text-sm">
-                Next Status
-            </button>
-        </form>
+        <span class="text-sm text-gray-500">{{ $concept->xp }} XP</span>
     </div>
 </div>

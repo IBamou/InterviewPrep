@@ -25,9 +25,9 @@
                 <div class="w-9 h-9 rounded-lg bg-secondary/10 flex items-center justify-center">
                     <span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
                 </div>
-                <span class="text-[11px] font-semibold text-on-surface-variant/70 uppercase tracking-wide">Mastery</span>
+                <span class="text-[11px] font-semibold text-on-surface-variant/70 uppercase tracking-wide">Mastered</span>
             </div>
-            <div class="text-2xl font-bold text-on-surface mb-1">{{ $masteryRate }}%</div>
+            <div class="text-2xl font-bold text-on-surface mb-1">{{ $totalMastered }}/{{ $totalConcepts }}</div>
             <div class="w-full bg-surface-container h-1.5 rounded-full">
                 <div class="bg-secondary h-full rounded-full transition-all" style="width: {{ $masteryRate }}%"></div>
             </div>
@@ -69,7 +69,7 @@
                             <div>
                                 <div class="text-[13px] font-medium text-on-surface">{{ $concept->title }}</div>
                                 <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] text-on-surface-variant/60 capitalize">{{ $concept->difficulty->value }}</span>
+                                    <span class="text-[10px] text-on-surface-variant/60">{{ $concept->domain->name }}</span>
                                     <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
                                     <span class="text-[10px] text-error font-medium">To Review</span>
                                 </div>
@@ -83,17 +83,48 @@
                 </div>
             </section>
 
+            @if ($staleConcepts->isNotEmpty())
+            <section class="bg-white border border-amber-200 rounded-xl overflow-hidden">
+                <div class="px-4 py-3 border-b border-amber-200 flex justify-between items-center bg-amber-50/50">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-amber-600 text-[18px]">history_edu</span>
+                        <h3 class="text-[14px] font-semibold text-amber-800">Needs Refresh</h3>
+                    </div>
+                    <span class="text-[11px] text-amber-700/60">Not practiced in 30+ days</span>
+                </div>
+                <div class="divide-y divide-amber-100/50">
+                    @foreach ($staleConcepts as $concept)
+                    <a href="{{ route('concepts.practice', $concept) }}" class="px-4 py-3 flex items-center justify-between hover:bg-amber-50/50 transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                                <span class="material-symbols-outlined text-amber-700 text-[16px]">refresh</span>
+                            </div>
+                            <div>
+                                <div class="text-[13px] font-medium text-on-surface">{{ $concept->title }}</div>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] text-on-surface-variant/60">{{ $concept->domain->name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-[11px] text-amber-600 font-medium group-hover:text-amber-700">Practice →</span>
+                    </a>
+                    @endforeach
+                </div>
+            </section>
+            @endif
+
             <section class="bg-white border border-outline-variant/50 rounded-xl p-4">
-                <h3 class="text-[14px] font-semibold text-on-surface mb-4">Performance by Domain</h3>
+                <h3 class="text-[14px] font-semibold text-on-surface mb-4">Domains Overview</h3>
                 <div class="space-y-3">
                     @forelse ($domains->take(5) as $domain)
-                    @php $pct = $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0; @endphp
                     <div class="flex items-center gap-3">
                         <span class="text-[13px] text-on-surface w-32 truncate">{{ $domain->name }}</span>
-                        <div class="flex-1 bg-surface-container h-2 rounded-full">
-                            <div class="bg-primary h-full rounded-full transition-all" style="width: {{ $pct }}%"></div>
+                        <div class="flex-1 flex items-center gap-2">
+                            <div class="flex-1 bg-surface-container h-2 rounded-full overflow-hidden">
+                                <div class="bg-secondary h-full rounded-full transition-all" style="width: {{ $domain->concepts_count > 0 ? round(($domain->mastered_count / $domain->concepts_count) * 100) : 0 }}%"></div>
+                            </div>
+                            <span class="text-[11px] text-on-surface-variant/60 w-20 text-right">{{ $domain->mastered_count }}/{{ $domain->concepts_count }} mastered</span>
                         </div>
-                        <span class="text-[12px] font-medium text-on-surface-variant w-10 text-right">{{ $pct }}%</span>
                     </div>
                     @empty
                     <div class="text-center py-4 text-on-surface-variant/60 text-[13px]">No domains yet.</div>

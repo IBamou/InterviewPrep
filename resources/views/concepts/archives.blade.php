@@ -30,7 +30,6 @@
         <div class="bg-white border border-outline-variant/50 rounded-xl p-4 flex flex-col">
             <div class="flex items-start justify-between mb-3">
                 <span class="px-2 py-0.5 bg-primary/5 text-primary rounded text-[10px] font-medium">{{ $domain->name }}</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-medium {{ $concept->difficulty->value === 'junior' ? 'bg-secondary/10 text-secondary' : ($concept->difficulty->value === 'mid' ? 'bg-amber-50 text-amber-600' : 'bg-error/5 text-error') }}">{{ ucfirst($concept->difficulty->value) }}</span>
             </div>
             <h3 class="text-[14px] font-semibold text-on-surface mb-1">{{ $concept->title }}</h3>
             <p class="text-[12px] text-on-surface-variant/40 mb-3">Archived {{ $concept->deleted_at->diffForHumans() }}</p>

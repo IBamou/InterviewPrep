@@ -284,9 +284,9 @@ class GroqService
         return $parsed['improved_explanation'];
     }
 
-    public function generateConceptExplanation(string $title, string $domainName, string $difficulty): array
+    public function generateConceptExplanation(string $title, string $domainName): array
     {
-        $messages = $this->promptBuilder->buildGenerateConceptExplanationMessages($title, $domainName, $difficulty);
+        $messages = $this->promptBuilder->buildGenerateConceptExplanationMessages($title, $domainName);
 
         $response = $this->client()->post('/chat/completions', [
             'model' => $this->defaultModel,

@@ -5,7 +5,7 @@ use App\Models\Domain;
 use App\Models\User;
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->create(['onboarding_completed' => true]);
 });
 
 it('has working archives link in concept create page', function () {
@@ -30,7 +30,6 @@ it('has working archives link in concept show page', function () {
         'domain_id' => $domain->id,
         'title' => 'Eloquent',
         'explanation' => 'ORM explanation',
-        'difficulty' => 'junior',
         'status' => 'to_review',
     ]);
 
@@ -50,7 +49,6 @@ it('has working archives link in concept edit page', function () {
         'domain_id' => $domain->id,
         'title' => 'Indexing',
         'explanation' => 'DB indexing',
-        'difficulty' => 'senior',
         'status' => 'in_progress',
     ]);
 
@@ -70,7 +68,6 @@ it('show page displays concepts count without triggering extra query', function 
         'domain_id' => $domain->id,
         'title' => 'Caching',
         'explanation' => 'Cache strategies',
-        'difficulty' => 'mid',
         'status' => 'to_review',
     ]);
 
@@ -78,7 +75,6 @@ it('show page displays concepts count without triggering extra query', function 
         'domain_id' => $domain->id,
         'title' => 'Persistence',
         'explanation' => 'Redis persistence',
-        'difficulty' => 'senior',
         'status' => 'mastered',
     ]);
 
@@ -99,7 +95,6 @@ it('edit page loads domain without error', function () {
         'domain_id' => $domain->id,
         'title' => 'Containers',
         'explanation' => 'Container explanation',
-        'difficulty' => 'junior',
         'status' => 'to_review',
     ]);
 

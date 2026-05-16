@@ -72,9 +72,6 @@
                                 <span class="text-[12px] text-primary font-medium">{{ $concept->domain->name }}</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium {{ $concept->difficulty->value === 'junior' ? 'bg-secondary/10 text-secondary' : ($concept->difficulty->value === 'mid' ? 'bg-amber-50 text-amber-600' : 'bg-error/5 text-error') }}">
-                                    {{ ucfirst($concept->difficulty->value) }}
-                                </span>
                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-medium {{ $concept->status->value === 'to_review' ? 'bg-error/5 text-error' : ($concept->status->value === 'mastered' ? 'bg-secondary/10 text-secondary' : 'bg-amber-50 text-amber-600') }}">
                                     {{ $concept->status->label() }}
                                 </span>

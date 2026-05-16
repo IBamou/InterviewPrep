@@ -13,7 +13,9 @@ class PromptBuilder
     protected function buildGenerateQuestionsSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical interview coach. First, check if the following concept is relevant to its parent domain. If it is NOT relevant, return: {"error": "unrelated", "message": "The concept is not related to the domain."}
+You are a technical interview coach. Be simple, precise, and direct. No extra talking.
+
+First, check if the following concept is relevant to its parent domain. If it is NOT relevant, return: {"error": "unrelated", "message": "The concept is not related to the domain."}
 
 If it IS relevant, generate exactly 5 mock interview questions.
 
@@ -36,11 +38,10 @@ PROMPT;
         return <<<PROMPT
 {$userContext}{$domainContext}{$domainDescription}
 Concept: {$concept->title}
-Difficulty Level: {$concept->difficulty->value}
 Explanation:
 {$concept->explanation}
 
-Generate 5 interview questions that test understanding of this concept at the {$concept->difficulty->value} level, specifically within the context of the domain mentioned above.
+Generate 5 interview questions that test understanding of this concept, specifically within the context of the domain mentioned above.
 {$dedupSection}
 PROMPT;
     }
@@ -56,12 +57,17 @@ PROMPT;
     protected function buildEvaluateAnswersSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are an interview coach evaluating candidate answers for a technical concept.
+You are an interview coach evaluating candidate answers. Be simple, precise, and direct. No extra talking.
 
 For each question-answer pair below, provide:
-1. A rating from 1 to 5 (integer)
-2. Brief constructive feedback
-3. A model answer that would score 5/5
+1. A rating from 0 to 5 (integer)
+2. Brief constructive feedback (1-2 sentences max)
+3. A concise model answer (2-3 sentences max)
+
+IMPORTANT: If the user's answer is empty or just whitespace, they don't know the answer. In this case:
+- Give a rating of 0
+- Use exactly this feedback: "No answer provided. Study the model answer below to learn this concept."
+- Give a clear, concise model answer so the user can learn
 
 Return ONLY valid JSON with this exact structure:
 {"evaluations": [{"question_index": 0, "rating": 4, "feedback": "...", "model_answer": "..."}, ...]}
@@ -81,7 +87,6 @@ PROMPT;
 
         return <<<PROMPT
 {$domainContext}{$domainDescription}Concept: {$concept->title}
-Difficulty: {$concept->difficulty->value}
 
 {$questionsList}
 PROMPT;
@@ -151,7 +156,7 @@ PROMPT;
     protected function buildImproveDomainDescriptionSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical education expert helping with domain descriptions for an interview preparation app.
+You are a technical education expert. Be simple, precise, and direct. No extra talking.
 
 If a description is provided, rewrite it to be a solid, concise definition (1-2 sentences max). Focus on what the domain is and its core purpose. Do not add fluff, history, or unnecessary details.
 If no description is provided, generate one from scratch based on the domain name.
@@ -190,10 +195,10 @@ PROMPT;
     protected function buildImproveConceptExplanationSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical education expert helping with concept explanations for an interview preparation app.
+You are a technical education expert. Be simple, precise, and direct. No extra talking.
 
 If an explanation is provided, rewrite it to be a solid, concise definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
-If no explanation is provided, generate one from scratch based on the concept title and difficulty level.
+If no explanation is provided, generate one from scratch based on the concept title.
 
 Return ONLY a valid JSON object:
 {"improved_explanation": "Your improved text here"}
@@ -211,7 +216,6 @@ PROMPT;
 
         return <<<PROMPT
 Concept: {$concept->title}
-Difficulty: {$concept->difficulty->value}
 Current explanation:
 {$current}
 
@@ -230,7 +234,7 @@ PROMPT;
     protected function buildGenerateConceptExplanationSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical education expert writing concept explanations for an interview preparation app.
+You are a technical education expert. Be simple, precise, and direct. No extra talking.
 
 First, check if the concept title is a valid technical term related to the given domain. Be lenient with typos — attempt to interpret what the user meant (e.g., "type castng" → "Type Casting", "routng" → "Routing"). Only reject if the input is truly gibberish, random characters, or completely unrelated to the domain.
 
@@ -245,29 +249,28 @@ OR
 PROMPT;
     }
 
-    protected function buildGenerateConceptExplanationUserPrompt(string $title, string $domainName, string $difficulty): string
+    protected function buildGenerateConceptExplanationUserPrompt(string $title, string $domainName): string
     {
         return <<<PROMPT
 Domain: {$domainName}
 Concept: {$title}
-Difficulty: {$difficulty}
 
 Generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews.
 PROMPT;
     }
 
-    public function buildGenerateConceptExplanationMessages(string $title, string $domainName, string $difficulty): array
+    public function buildGenerateConceptExplanationMessages(string $title, string $domainName): array
     {
         return [
             ['role' => 'system', 'content' => $this->buildGenerateConceptExplanationSystemPrompt()],
-            ['role' => 'user', 'content' => $this->buildGenerateConceptExplanationUserPrompt($title, $domainName, $difficulty)],
+            ['role' => 'user', 'content' => $this->buildGenerateConceptExplanationUserPrompt($title, $domainName)],
         ];
     }
 
     protected function buildVerifyConceptTitleSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical education expert validating concept titles for an interview preparation app.
+You are a technical education expert. Be simple, precise, and direct. No extra talking.
 
 Check if the given concept title is a valid technical term related to the domain. Be lenient with typos — detect what the user likely meant.
 

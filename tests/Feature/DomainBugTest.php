@@ -5,7 +5,7 @@ use App\Models\Domain;
 use App\Models\User;
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->create(['onboarding_completed' => true]);
 });
 
 it('returns correct concepts_count and mastered_count in index', function () {
@@ -14,9 +14,9 @@ it('returns correct concepts_count and mastered_count in index', function () {
         'name' => 'PHP',
     ]);
 
-    Concept::create(['domain_id' => $domain->id, 'title' => 'C1', 'explanation' => 'E1', 'difficulty' => 'junior', 'status' => 'mastered']);
-    Concept::create(['domain_id' => $domain->id, 'title' => 'C2', 'explanation' => 'E2', 'difficulty' => 'junior', 'status' => 'mastered']);
-    Concept::create(['domain_id' => $domain->id, 'title' => 'C3', 'explanation' => 'E3', 'difficulty' => 'junior', 'status' => 'to_review']);
+    Concept::create(['domain_id' => $domain->id, 'title' => 'C1', 'explanation' => 'E1', 'status' => 'mastered']);
+    Concept::create(['domain_id' => $domain->id, 'title' => 'C2', 'explanation' => 'E2', 'status' => 'mastered']);
+    Concept::create(['domain_id' => $domain->id, 'title' => 'C3', 'explanation' => 'E3', 'status' => 'to_review']);
 
     $response = $this->actingAs($this->user)->get(route('domains.index'));
 
@@ -94,7 +94,6 @@ it('can restore a soft-deleted concept', function () {
         'domain_id' => $domain->id,
         'title' => 'Caching',
         'explanation' => 'Cache strategies',
-        'difficulty' => 'mid',
         'status' => 'to_review',
     ]);
 
@@ -117,7 +116,6 @@ it('can force-delete a soft-deleted concept', function () {
         'domain_id' => $domain->id,
         'title' => 'Indexing',
         'explanation' => 'DB indexing',
-        'difficulty' => 'senior',
         'status' => 'in_progress',
     ]);
 
