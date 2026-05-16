@@ -21,6 +21,44 @@ class ConceptController extends Controller
         return view('concepts.create', compact('domain'));
     }
 
+    public function verifyTitle(Request $request, Domain $domain, GroqService $groq)
+    {
+        $this->authorize('view', $domain);
+
+        $data = $request->validate([
+            'title' => 'required|string|min:3|max:255',
+        ]);
+
+        try {
+            $result = $groq->verifyConceptTitle($data['title'], $domain->name);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
+            return response()->json(['error' => 'Failed to verify title: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function generateExplanation(Request $request, Domain $domain, GroqService $groq)
+    {
+        $this->authorize('view', $domain);
+
+        $data = $request->validate([
+            'title' => 'required|string|min:3|max:255',
+            'difficulty' => 'required|in:junior,mid,senior',
+        ]);
+
+        try {
+            $result = $groq->generateConceptExplanation($data['title'], $domain->name, $data['difficulty']);
+
+            if (isset($result['error']) && $result['error'] === 'invalid') {
+                return response()->json(['error' => $result['message']], 422);
+            }
+
+            return response()->json(['explanation' => $result['explanation']]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['error' => 'Failed to generate explanation: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function store(StoreConceptRequest $request, Domain $domain)
     {
         $this->authorize('view', $domain);
@@ -149,7 +187,7 @@ class ConceptController extends Controller
         }
 
         try {
-            $questions = $groq->generateQuestions($concept);
+            $questions = $groq->generateQuestions($concept, Auth::user());
 
             if (isset($questions['error']) && $questions['error'] === 'unrelated') {
                 return back()->with('error', $questions['message'] ?? 'The concept is not relevant to this domain.');

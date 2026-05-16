@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Concept;
 use App\Models\Domain;
+use App\Models\User;
 
 class PromptBuilder
 {
@@ -23,15 +24,17 @@ OR
 PROMPT;
     }
 
-    protected function buildGenerateQuestionsUserPrompt(Concept $concept): string
+    protected function buildGenerateQuestionsUserPrompt(Concept $concept, ?User $user = null): string
     {
         $domainContext = $concept->domain ? "Domain: {$concept->domain->name}" : '';
         $domainDescription = ($concept->domain && $concept->domain->description) ? "\nDomain Description: {$concept->domain->description}" : '';
 
+        $userContext = $this->buildUserContext($user);
+
         $dedupSection = $this->buildDedupSection($concept);
 
         return <<<PROMPT
-{$domainContext}{$domainDescription}
+{$userContext}{$domainContext}{$domainDescription}
 Concept: {$concept->title}
 Difficulty Level: {$concept->difficulty->value}
 Explanation:
@@ -42,11 +45,11 @@ Generate 5 interview questions that test understanding of this concept at the {$
 PROMPT;
     }
 
-    public function buildGenerateQuestionsMessages(Concept $concept): array
+    public function buildGenerateQuestionsMessages(Concept $concept, ?User $user = null): array
     {
         return [
             ['role' => 'system', 'content' => $this->buildGenerateQuestionsSystemPrompt()],
-            ['role' => 'user', 'content' => $this->buildGenerateQuestionsUserPrompt($concept)],
+            ['role' => 'user', 'content' => $this->buildGenerateQuestionsUserPrompt($concept, $user)],
         ];
     }
 
@@ -109,12 +112,49 @@ PROMPT;
         return "\n\nPreviously generated questions for this concept — DO NOT repeat or rephrase these:\n{$list}\n";
     }
 
+    protected function buildUserContext(?User $user): string
+    {
+        if (!$user || !$user->specialization) {
+            return '';
+        }
+
+        $parts = [];
+
+        if ($user->status) {
+            $parts[] = "User Status: {$user->status->label()}";
+        }
+
+        if ($user->specialization) {
+            $parts[] = "Specialization: {$user->specialization->label()} Developer";
+        }
+
+        if ($user->experience_years) {
+            $parts[] = "Experience: {$user->experience_years->label()}";
+        }
+
+        if ($user->tech_stack && is_array($user->tech_stack) && !empty($user->tech_stack)) {
+            $techList = implode(', ', $user->tech_stack);
+            $parts[] = "Tech Stack: {$techList}";
+        }
+
+        if ($user->interview_goal) {
+            $parts[] = "Goal: {$user->interview_goal->label()}";
+        }
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        return "User Profile:\n" . implode("\n", $parts) . "\n\n";
+    }
+
     protected function buildImproveDomainDescriptionSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical education expert helping to improve domain descriptions for an interview preparation app.
+You are a technical education expert helping with domain descriptions for an interview preparation app.
 
-Rewrite the given description to be a solid, concise definition (1-2 sentences max). Focus on what the domain is and its core purpose. Do not add fluff, history, or unnecessary details.
+If a description is provided, rewrite it to be a solid, concise definition (1-2 sentences max). Focus on what the domain is and its core purpose. Do not add fluff, history, or unnecessary details.
+If no description is provided, generate one from scratch based on the domain name.
 
 Return ONLY a valid JSON object:
 {"improved_description": "Your improved text here"}
@@ -123,14 +163,19 @@ PROMPT;
 
     protected function buildImproveDomainDescriptionUserPrompt(Domain $domain): string
     {
-        $current = $domain->description ?: '(No description provided)';
+        $isEmpty = empty(trim($domain->description ?? ''));
+        $current = $isEmpty ? '(No description provided — generate one from scratch)' : $domain->description;
+
+        $instruction = $isEmpty
+            ? "Generate a concise, solid definition (1-2 sentences max) for this domain based on its name."
+            : "Rewrite this as a concise, solid definition (1-2 sentences max).";
 
         return <<<PROMPT
 Domain: {$domain->name}
 Current description:
 {$current}
 
-Rewrite this as a concise, solid definition (1-2 sentences max).
+{$instruction}
 PROMPT;
     }
 
@@ -145,9 +190,10 @@ PROMPT;
     protected function buildImproveConceptExplanationSystemPrompt(): string
     {
         return <<<'PROMPT'
-You are a technical education expert helping to improve concept explanations for an interview preparation app.
+You are a technical education expert helping with concept explanations for an interview preparation app.
 
-Rewrite the given explanation to be a solid, concise definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
+If an explanation is provided, rewrite it to be a solid, concise definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
+If no explanation is provided, generate one from scratch based on the concept title and difficulty level.
 
 Return ONLY a valid JSON object:
 {"improved_explanation": "Your improved text here"}
@@ -156,7 +202,12 @@ PROMPT;
 
     protected function buildImproveConceptExplanationUserPrompt(Concept $concept): string
     {
-        $current = $concept->explanation ?: '(No explanation provided)';
+        $isEmpty = empty(trim($concept->explanation ?? ''));
+        $current = $isEmpty ? '(No explanation provided — generate one from scratch)' : $concept->explanation;
+
+        $instruction = $isEmpty
+            ? "Generate a concise, solid definition (2-3 short sentences max) for this concept. Cover what it is and why it matters for interviews."
+            : "Rewrite this as a concise, solid definition (2-3 short sentences max).";
 
         return <<<PROMPT
 Concept: {$concept->title}
@@ -164,7 +215,7 @@ Difficulty: {$concept->difficulty->value}
 Current explanation:
 {$current}
 
-Rewrite this as a concise, solid definition (2-3 short sentences max).
+{$instruction}
 PROMPT;
     }
 
@@ -173,6 +224,75 @@ PROMPT;
         return [
             ['role' => 'system', 'content' => $this->buildImproveConceptExplanationSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildImproveConceptExplanationUserPrompt($concept)],
+        ];
+    }
+
+    protected function buildGenerateConceptExplanationSystemPrompt(): string
+    {
+        return <<<'PROMPT'
+You are a technical education expert writing concept explanations for an interview preparation app.
+
+First, check if the concept title is a valid technical term related to the given domain. Be lenient with typos — attempt to interpret what the user meant (e.g., "type castng" → "Type Casting", "routng" → "Routing"). Only reject if the input is truly gibberish, random characters, or completely unrelated to the domain.
+
+If rejected, return: {"error": "invalid", "message": "The concept title is not valid or not related to this domain."}
+
+If valid, generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
+
+Return ONLY a valid JSON object. Either:
+{"error": "invalid", "message": "..."}
+OR
+{"explanation": "Your explanation here"}
+PROMPT;
+    }
+
+    protected function buildGenerateConceptExplanationUserPrompt(string $title, string $domainName, string $difficulty): string
+    {
+        return <<<PROMPT
+Domain: {$domainName}
+Concept: {$title}
+Difficulty: {$difficulty}
+
+Generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews.
+PROMPT;
+    }
+
+    public function buildGenerateConceptExplanationMessages(string $title, string $domainName, string $difficulty): array
+    {
+        return [
+            ['role' => 'system', 'content' => $this->buildGenerateConceptExplanationSystemPrompt()],
+            ['role' => 'user', 'content' => $this->buildGenerateConceptExplanationUserPrompt($title, $domainName, $difficulty)],
+        ];
+    }
+
+    protected function buildVerifyConceptTitleSystemPrompt(): string
+    {
+        return <<<'PROMPT'
+You are a technical education expert validating concept titles for an interview preparation app.
+
+Check if the given concept title is a valid technical term related to the domain. Be lenient with typos — detect what the user likely meant.
+
+Return ONLY a valid JSON object with one of these structures:
+1. If valid and correctly spelled: {"valid": true}
+2. If valid but has a typo: {"valid": false, "suggestion": "Corrected Title", "message": "Did you mean 'Corrected Title'?"}
+3. If gibberish or unrelated: {"valid": false, "message": "This doesn't appear to be a valid technical concept for this domain."}
+PROMPT;
+    }
+
+    protected function buildVerifyConceptTitleUserPrompt(string $title, string $domainName): string
+    {
+        return <<<PROMPT
+Domain: {$domainName}
+Concept title to verify: {$title}
+
+Check if this is a valid technical concept for this domain. If there's a typo, suggest the correct spelling.
+PROMPT;
+    }
+
+    public function buildVerifyConceptTitleMessages(string $title, string $domainName): array
+    {
+        return [
+            ['role' => 'system', 'content' => $this->buildVerifyConceptTitleSystemPrompt()],
+            ['role' => 'user', 'content' => $this->buildVerifyConceptTitleUserPrompt($title, $domainName)],
         ];
     }
 }

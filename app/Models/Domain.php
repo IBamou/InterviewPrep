@@ -12,7 +12,7 @@ class Domain extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'description', 'color', 'user_id'];
+    protected $fillable = ['name', 'description', 'user_id'];
 
     public function user(): BelongsTo
     {

@@ -7,8 +7,8 @@ $i = $colorIndex % 4;
 @endphp
 <div class="bg-white rounded-xl border border-outline-variant p-6 shadow-sm hover:shadow-md transition-shadow group">
 <div class="flex justify-between items-start mb-4">
-<div class="p-3 rounded-xl group-hover:scale-110 transition-transform" style="background-color: {{ $domain->color }}20;">
-<span class="material-symbols-outlined" style="color: {{ $domain->color }};">database</span>
+<div class="p-3 rounded-xl bg-primary/10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary">database</span>
 </div>
 <span class="px-3 py-1 {{ $badgeColors[$i] }} text-xs font-bold rounded-full uppercase tracking-tight">{{ $pct >= 100 ? 'Mastered' : ($pct >= 50 ? 'In Progress' : 'To Review') }}</span>
 </div>

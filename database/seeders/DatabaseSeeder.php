@@ -17,12 +17,12 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        if (! User::count()) {
-            User::create([
-                'name' => 'admin',
-                'email' => 'admin@gmail.com',
-                'password' => bcrypt('admin123'),
-            ]);
-        }
+        // if (! User::count()) {
+        //     User::create([
+        //         'name' => 'admin',
+        //         'email' => 'admin@gmail.com',
+        //         'password' => bcrypt('admin123'),
+        //     ]);
+        // }
     }
 }

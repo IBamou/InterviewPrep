@@ -35,15 +35,6 @@
                     <textarea class="w-full p-3 rounded-lg border border-outline-variant/60 text-[13px] focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all resize-none @error('description') border-error @enderror" id="description" name="description" rows="4">{{ old('description', $domain->description) }}</textarea>
                     @error('description')<p class="mt-1 text-[12px] text-error">{{ $message }}</p>@enderror
                 </div>
-
-                <div>
-                    <label class="text-[13px] font-medium text-on-surface mb-1.5 block" for="color">Color</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="color-picker" value="{{ old('color', $domain->color) }}" class="w-9 h-9 rounded border border-outline-variant/60 cursor-pointer p-0.5" oninput="document.getElementById('color').value=this.value"/>
-                        <input class="w-24 h-9 px-3 rounded-lg border border-outline-variant/60 text-[13px] font-mono focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all @error('color') border-error @enderror" id="color" name="color" value="{{ old('color', $domain->color) }}" type="text" placeholder="#6366f1" maxlength="7" oninput="document.getElementById('color-picker').value=this.value"/>
-                    </div>
-                    @error('color')<p class="mt-1 text-[12px] text-error">{{ $message }}</p>@enderror
-                </div>
             </div>
 
             <div class="flex items-center justify-between">

@@ -35,14 +35,22 @@
             <section class="bg-white border border-outline-variant/50 rounded-xl p-5" x-data="explanationImprover()">
                 <div class="flex items-center justify-between mb-3 pb-3 border-b border-outline-variant/30">
                     <h3 class="text-[14px] font-semibold text-on-surface">Explanation</h3>
-                    <button @click="improveExplanation('{{ route('concepts.improveExplanation', $concept) }}')" :disabled="loading" class="inline-flex items-center gap-1 text-[11px] text-primary font-medium hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[14px]" x-show="!loading">auto_fix_high</span>
+                    <button @click="improveExplanation('{{ route('concepts.improveExplanation', $concept) }}')" :disabled="loading" class="inline-flex items-center gap-1 text-[11px] {{ $concept->explanation ? 'text-primary' : 'text-secondary' }} font-medium hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[14px]" x-show="!loading">{{ $concept->explanation ? 'auto_fix_high' : 'auto_awesome' }}</span>
                         <span class="material-symbols-outlined text-[14px] animate-spin" x-show="loading">progress_activity</span>
-                        <span x-text="loading ? 'Generating...' : 'Improve with AI'"></span>
+                        <span x-text="loading ? 'Generating...' : '{{ $concept->explanation ? 'Improve with AI' : 'Generate with AI' }}'"></span>
                     </button>
                 </div>
                 <div x-show="!showSuggestion">
-                    <div class="text-[14px] text-on-surface-variant/80 leading-relaxed">{!! nl2br(e($concept->explanation)) !!}</div>
+                    @if($concept->explanation)
+                        <div class="text-[14px] text-on-surface-variant/80 leading-relaxed">{!! nl2br(e($concept->explanation)) !!}</div>
+                    @else
+                        <div class="flex flex-col items-center justify-center py-6 text-center">
+                            <span class="material-symbols-outlined text-on-surface-variant/30 text-[40px] mb-2">edit_note</span>
+                            <p class="text-[13px] text-on-surface-variant/50 mb-1">No explanation written yet.</p>
+                            <p class="text-[12px] text-on-surface-variant/40">Write your own or click "Generate with AI" to create one.</p>
+                        </div>
+                    @endif
                 </div>
                 <div x-show="showSuggestion" class="mt-3 bg-primary-fixed/30 border border-primary/20 rounded-lg p-3">
                     <p class="text-[12px] font-medium text-on-surface-variant/50 mb-1">AI Suggestion:</p>

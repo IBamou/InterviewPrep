@@ -17,45 +17,41 @@
         <h2 class="font-display-lg text-display-lg text-on-surface">{{ $domain->name }}</h2>
     </div>
 
-    <div class="bg-white border border-outline-variant/50 rounded-2xl overflow-hidden mb-6 shadow-sm" x-data="descriptionImprover()">
-        <div class="relative bg-gradient-to-r from-primary/5 via-primary-container/10 to-transparent px-6 pt-5 pb-4">
-            <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">description</span>
-                        <span class="text-[11px] font-semibold text-primary uppercase tracking-wider">Description</span>
-                    </div>
-                    <div x-show="!showSuggestion">
-                        <p class="text-[15px] text-on-surface/80 leading-relaxed">{{ $domain->description ?? 'No description provided yet.' }}</p>
-                    </div>
-                    <div x-show="showSuggestion" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2">
-                        <div class="bg-white/80 backdrop-blur rounded-xl border border-primary/20 p-4 shadow-sm">
-                            <div class="flex items-center gap-1.5 mb-2">
-                                <span class="material-symbols-outlined text-primary text-[16px]" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
-                                <span class="text-[12px] font-semibold text-primary">AI Suggestion</span>
-                            </div>
-                            <p class="text-[14px] text-on-surface/80 leading-relaxed mb-3" x-text="suggestion"></p>
-                            <div class="flex items-center gap-2 pt-2 border-t border-outline-variant/20">
-                                <form :action="acceptUrl" method="POST" class="inline">
-                                    @csrf
-                                    <input type="hidden" name="description" :value="suggestion"/>
-                                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-xl text-[12px] font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-sm shadow-primary/20">
-                                        <span class="material-symbols-outlined text-[14px]">check</span>
-                                        Apply
-                                    </button>
-                                </form>
-                                <button @click="showSuggestion = false" class="px-4 py-2 bg-surface-container text-on-surface-variant rounded-xl text-[12px] font-semibold hover:bg-surface-container-high active:scale-[0.98] transition-all flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[14px]">close</span>
-                                    Dismiss
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+    <div class="bg-white border border-outline-variant/50 rounded-xl p-5 mb-6 shadow-sm" x-data="descriptionImprover()">
+        <div class="flex items-center justify-between mb-3 pb-3 border-b border-outline-variant/30">
+            <h3 class="text-[14px] font-semibold text-on-surface">Description</h3>
+            <button @click="improve('{{ route('domains.improveDescription', $domain) }}')" :disabled="loading" class="inline-flex items-center gap-1 text-[11px] {{ $domain->description ? 'text-primary' : 'text-secondary' }} font-medium hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="material-symbols-outlined text-[14px]" x-show="!loading">{{ $domain->description ? 'auto_fix_high' : 'auto_awesome' }}</span>
+                <span class="material-symbols-outlined text-[14px] animate-spin" x-show="loading">progress_activity</span>
+                <span x-text="loading ? 'Generating...' : '{{ $domain->description ? 'Improve with AI' : 'Generate with AI' }}'"></span>
+            </button>
+        </div>
+        <div x-show="!showSuggestion">
+            @if($domain->description)
+                <div class="text-[14px] text-on-surface-variant/80 leading-relaxed">{{ $domain->description }}</div>
+            @else
+                <div class="flex flex-col items-center justify-center py-6 text-center">
+                    <span class="material-symbols-outlined text-on-surface-variant/30 text-[40px] mb-2">description</span>
+                    <p class="text-[13px] text-on-surface-variant/50 mb-1">No description written yet.</p>
+                    <p class="text-[12px] text-on-surface-variant/40">Write your own or click "Generate with AI" to create one.</p>
                 </div>
-                <button @click="improve('{{ route('domains.improveDescription', $domain) }}')" :disabled="loading" class="shrink-0 px-3 py-2 bg-primary text-white rounded-xl text-[11px] font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-sm shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
-                    <span class="material-symbols-outlined text-[16px]" x-show="!loading" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
-                    <span class="material-symbols-outlined text-[16px] animate-spin" x-show="loading">progress_activity</span>
-                    <span x-text="loading ? 'Generating...' : 'Improve'"></span>
+            @endif
+        </div>
+        <div x-show="showSuggestion" class="mt-3 bg-primary-fixed/30 border border-primary/20 rounded-lg p-3">
+            <p class="text-[12px] font-medium text-on-surface-variant/50 mb-1">AI Suggestion:</p>
+            <div class="text-[14px] text-on-surface-variant/80 leading-relaxed mb-3" x-text="suggestion"></div>
+            <div class="flex items-center gap-2">
+                <form :action="acceptUrl" method="POST" class="inline">
+                    @csrf
+                    <input type="hidden" name="description" :value="suggestion"/>
+                    <button type="submit" class="px-3 py-1 bg-primary text-white rounded-lg text-[11px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">check</span>
+                        Accept
+                    </button>
+                </form>
+                <button @click="showSuggestion = false" class="px-3 py-1 border border-outline-variant text-on-surface-variant rounded-lg text-[11px] font-medium hover:bg-surface-container transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">close</span>
+                    Reject
                 </button>
             </div>
         </div>

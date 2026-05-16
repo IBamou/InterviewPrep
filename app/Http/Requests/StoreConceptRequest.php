@@ -16,7 +16,7 @@ class StoreConceptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'min:3', 'max:255'],
             'explanation' => ['required', 'string'],
             'difficulty' => ['required', Rule::enum(Difficulty::class)],
         ];

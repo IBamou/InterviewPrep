@@ -2,6 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ExperienceLevel;
+use App\Enums\InterviewGoal;
+use App\Enums\Specialization;
+use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,6 +30,13 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'status' => ['nullable', Rule::enum(UserStatus::class)],
+            'specialization' => ['nullable', Rule::enum(Specialization::class)],
+            'experience_years' => ['nullable', Rule::enum(ExperienceLevel::class)],
+            'tech_stack' => ['nullable', 'array'],
+            'tech_stack.*' => ['string', 'max:255'],
+            'interview_goal' => ['nullable', Rule::enum(InterviewGoal::class)],
+            'onboarding_completed' => ['nullable', 'boolean'],
         ];
     }
 }
