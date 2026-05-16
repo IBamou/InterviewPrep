@@ -166,7 +166,8 @@ class ConceptController extends Controller
                 ]);
             }
 
-            return redirect()->route('concepts.practice', $concept)->with('success', "Set {$setNumber}: 5 interview questions generated successfully.");
+            return redirect(route('concepts.practice', $concept) . '?page=' . $setNumber)
+                ->with('success', "Set {$setNumber}: 5 interview questions generated successfully.");
         } catch (\RuntimeException $e) {
             return back()->with('error', 'Failed to generate questions: ' . $e->getMessage());
         }

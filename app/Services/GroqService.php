@@ -1,7 +1,5 @@
 <?php
 
-// app/Services/GroqService.php
-
 namespace App\Services;
 
 use App\Models\Concept;
@@ -18,12 +16,15 @@ class GroqService
 
     protected array $defaults;
 
-    public function __construct()
+    protected PromptBuilder $promptBuilder;
+
+    public function __construct(PromptBuilder $promptBuilder)
     {
         $this->apiKey = config('groq.api_key');
         $this->baseUrl = config('groq.base_url');
         $this->defaultModel = config('groq.model');
         $this->defaults = config('groq.defaults');
+        $this->promptBuilder = $promptBuilder;
     }
 
     protected function client()
@@ -147,34 +148,11 @@ class GroqService
 
     public function generateQuestions(Concept $concept): array
     {
-        $domainContext = $concept->domain ? "Domain: {$concept->domain->name}" : '';
-        $domainDescription = ($concept->domain && $concept->domain->description) ? "\nDomain Description: {$concept->domain->description}" : '';
-
-        $prompt = <<<PROMPT
-You are a technical interview coach. First, check if the following concept is relevant to its parent domain. If it is NOT relevant, return: {"error": "unrelated", "message": "The concept is not related to the domain."}
-
-If it IS relevant, generate exactly 5 mock interview questions.
-
-{$domainContext}{$domainDescription}
-Concept: {$concept->title}
-Difficulty Level: {$concept->difficulty->value}
-Explanation:
-{$concept->explanation}
-
-If relevant, generate 5 interview questions that test understanding of this concept at the {$concept->difficulty->value} level, specifically within the context of the domain mentioned above.
-
-Return ONLY a valid JSON object. Either:
-{"error": "unrelated", "message": "..."}
-OR
-{"questions": ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]}
-PROMPT;
+        $messages = $this->promptBuilder->buildGenerateQuestionsMessages($concept);
 
         $response = $this->client()->post('/chat/completions', [
             'model' => $this->defaultModel,
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a JSON-only assistant. Always respond with valid JSON.'],
-                ['role' => 'user', 'content' => $prompt],
-            ],
+            'messages' => $messages,
             'max_tokens' => $this->defaults['max_tokens'],
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
@@ -210,38 +188,11 @@ PROMPT;
 
     public function evaluateAnswers(Concept $concept, array $answers): array
     {
-        $questionsList = '';
-        foreach ($answers as $i => $qa) {
-            $n = $i + 1;
-            $questionsList .= "Q{$n}: {$qa['question']}\nA{$n}: {$qa['answer']}\n\n";
-        }
-
-        $domainContext = $concept->domain ? "Domain: {$concept->domain->name}\n" : '';
-        $domainDescription = ($concept->domain && $concept->domain->description) ? "Domain Description: {$concept->domain->description}\n" : '';
-
-        $prompt = <<<PROMPT
-You are an interview coach evaluating candidate answers for a technical concept.
-
-{$domainContext}{$domainDescription}Concept: {$concept->title}
-Difficulty: {$concept->difficulty->value}
-
-For each question-answer pair below, provide:
-1. A rating from 1 to 5 (integer)
-2. Brief constructive feedback
-3. A model answer that would score 5/5
-
-Return ONLY valid JSON with this exact structure:
-{"evaluations": [{"question_index": 0, "rating": 4, "feedback": "...", "model_answer": "..."}, ...]}
-
-{$questionsList}
-PROMPT;
+        $messages = $this->promptBuilder->buildEvaluateAnswersMessages($concept, $answers);
 
         $response = $this->client()->post('/chat/completions', [
             'model' => $this->defaultModel,
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a JSON-only assistant. Always respond with valid JSON.'],
-                ['role' => 'user', 'content' => $prompt],
-            ],
+            'messages' => $messages,
             'max_tokens' => $this->defaults['max_tokens'] * 2,
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
