@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDomainRequest;
 use App\Http\Requests\UpdateDomainRequest;
 use App\Models\Domain;
+use App\Services\GroqService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DomainController extends Controller
@@ -103,5 +105,31 @@ class DomainController extends Controller
         $domain->forceDelete();
 
         return redirect()->route('domains.archives')->with('success', 'Domain permanently deleted.');
+    }
+
+    public function improveDescription(Domain $domain, GroqService $groq)
+    {
+        $this->authorize('update', $domain);
+
+        try {
+            $suggestion = $groq->improveDomainDescription($domain);
+
+            return response()->json(['suggestion' => $suggestion]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['error' => 'Failed to generate suggestion: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function acceptDescription(Request $request, Domain $domain)
+    {
+        $this->authorize('update', $domain);
+
+        $data = $request->validate([
+            'description' => 'required|string|max:1000',
+        ]);
+
+        $domain->update(['description' => $data['description']]);
+
+        return redirect()->route('domains.show', $domain)->with('success', 'Description updated successfully.');
     }
 }

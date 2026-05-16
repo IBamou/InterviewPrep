@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Concept;
+use App\Models\Domain;
 
 class PromptBuilder
 {
@@ -106,5 +107,72 @@ PROMPT;
         $list = implode("\n", array_map(fn ($q) => "- {$q}", $existingQuestions));
 
         return "\n\nPreviously generated questions for this concept — DO NOT repeat or rephrase these:\n{$list}\n";
+    }
+
+    protected function buildImproveDomainDescriptionSystemPrompt(): string
+    {
+        return <<<'PROMPT'
+You are a technical education expert helping to improve domain descriptions for an interview preparation app.
+
+Rewrite the given description to be a solid, concise definition (1-2 sentences max). Focus on what the domain is and its core purpose. Do not add fluff, history, or unnecessary details.
+
+Return ONLY a valid JSON object:
+{"improved_description": "Your improved text here"}
+PROMPT;
+    }
+
+    protected function buildImproveDomainDescriptionUserPrompt(Domain $domain): string
+    {
+        $current = $domain->description ?: '(No description provided)';
+
+        return <<<PROMPT
+Domain: {$domain->name}
+Current description:
+{$current}
+
+Rewrite this as a concise, solid definition (1-2 sentences max).
+PROMPT;
+    }
+
+    public function buildImproveDomainDescriptionMessages(Domain $domain): array
+    {
+        return [
+            ['role' => 'system', 'content' => $this->buildImproveDomainDescriptionSystemPrompt()],
+            ['role' => 'user', 'content' => $this->buildImproveDomainDescriptionUserPrompt($domain)],
+        ];
+    }
+
+    protected function buildImproveConceptExplanationSystemPrompt(): string
+    {
+        return <<<'PROMPT'
+You are a technical education expert helping to improve concept explanations for an interview preparation app.
+
+Rewrite the given explanation to be a solid, concise definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
+
+Return ONLY a valid JSON object:
+{"improved_explanation": "Your improved text here"}
+PROMPT;
+    }
+
+    protected function buildImproveConceptExplanationUserPrompt(Concept $concept): string
+    {
+        $current = $concept->explanation ?: '(No explanation provided)';
+
+        return <<<PROMPT
+Concept: {$concept->title}
+Difficulty: {$concept->difficulty->value}
+Current explanation:
+{$current}
+
+Rewrite this as a concise, solid definition (2-3 short sentences max).
+PROMPT;
+    }
+
+    public function buildImproveConceptExplanationMessages(Concept $concept): array
+    {
+        return [
+            ['role' => 'system', 'content' => $this->buildImproveConceptExplanationSystemPrompt()],
+            ['role' => 'user', 'content' => $this->buildImproveConceptExplanationUserPrompt($concept)],
+        ];
     }
 }

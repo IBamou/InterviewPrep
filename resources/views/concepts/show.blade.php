@@ -32,9 +32,36 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div class="lg:col-span-2 space-y-5">
-            <section class="bg-white border border-outline-variant/50 rounded-xl p-5">
-                <h3 class="text-[14px] font-semibold text-on-surface mb-3 pb-3 border-b border-outline-variant/30">Explanation</h3>
-                <div class="text-[14px] text-on-surface-variant/80 leading-relaxed">{!! nl2br(e($concept->explanation)) !!}</div>
+            <section class="bg-white border border-outline-variant/50 rounded-xl p-5" x-data="explanationImprover()">
+                <div class="flex items-center justify-between mb-3 pb-3 border-b border-outline-variant/30">
+                    <h3 class="text-[14px] font-semibold text-on-surface">Explanation</h3>
+                    <button @click="improveExplanation('{{ route('concepts.improveExplanation', $concept) }}')" :disabled="loading" class="inline-flex items-center gap-1 text-[11px] text-primary font-medium hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[14px]" x-show="!loading">auto_fix_high</span>
+                        <span class="material-symbols-outlined text-[14px] animate-spin" x-show="loading">progress_activity</span>
+                        <span x-text="loading ? 'Generating...' : 'Improve with AI'"></span>
+                    </button>
+                </div>
+                <div x-show="!showSuggestion">
+                    <div class="text-[14px] text-on-surface-variant/80 leading-relaxed">{!! nl2br(e($concept->explanation)) !!}</div>
+                </div>
+                <div x-show="showSuggestion" class="mt-3 bg-primary-fixed/30 border border-primary/20 rounded-lg p-3">
+                    <p class="text-[12px] font-medium text-on-surface-variant/50 mb-1">AI Suggestion:</p>
+                    <div class="text-[14px] text-on-surface-variant/80 leading-relaxed mb-3" x-html="suggestion"></div>
+                    <div class="flex items-center gap-2">
+                        <form :action="acceptUrl" method="POST" class="inline">
+                            @csrf
+                            <input type="hidden" name="explanation" :value="suggestion"/>
+                            <button type="submit" class="px-3 py-1 bg-primary text-white rounded-lg text-[11px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">check</span>
+                                Accept
+                            </button>
+                        </form>
+                        <button @click="showSuggestion = false" class="px-3 py-1 border border-outline-variant text-on-surface-variant rounded-lg text-[11px] font-medium hover:bg-surface-container transition-all flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">close</span>
+                            Reject
+                        </button>
+                    </div>
+                </div>
             </section>
 
             @if ($questionSets->isNotEmpty())
@@ -195,4 +222,42 @@
             </div>
         </div>
     </div>
+
+    <script>
+    function explanationImprover() {
+        return {
+            showSuggestion: false,
+            suggestion: '',
+            loading: false,
+            acceptUrl: '{{ route('concepts.acceptExplanation', $concept) }}',
+            improveExplanation(url) {
+                this.loading = true;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    this.suggestion = data.suggestion.replace(/\n/g, '<br>');
+                    this.showSuggestion = true;
+                })
+                .catch(() => {
+                    alert('Failed to generate suggestion. Please try again.');
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+            },
+        };
+    }
+    </script>
 </x-app-layout>

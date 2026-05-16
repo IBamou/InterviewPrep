@@ -24,6 +24,10 @@ Domains
 <span class="material-symbols-outlined text-[18px]">inventory_2</span>
 Archives
 </a>
+<a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'search' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('search') }}">
+<span class="material-symbols-outlined text-[18px]">search</span>
+Search
+</a>
 </nav>
 <div class="px-3 pb-4 mt-auto">
 <div class="border-t border-outline-variant pt-3 space-y-2">

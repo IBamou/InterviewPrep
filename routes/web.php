@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConceptController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::get('/domains/create', [DomainController::class, 'create'])->name('domains.create');
     Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
@@ -45,6 +47,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/domains/{domain}/edit', [DomainController::class, 'edit'])->name('domains.edit');
     Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
     Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
+    Route::post('/domains/{domain}/improve-description', [DomainController::class, 'improveDescription'])->name('domains.improveDescription');
+    Route::post('/domains/{domain}/accept-description', [DomainController::class, 'acceptDescription'])->name('domains.acceptDescription');
 
     Route::get('/domains/{domain}/concepts/create', [ConceptController::class, 'create'])->name('concepts.create');
     Route::post('/domains/{domain}/concepts', [ConceptController::class, 'store'])->name('concepts.store');
@@ -58,6 +62,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/concepts/{concept}', [ConceptController::class, 'archive'])->name('concepts.archive');
     Route::post('/concepts/{concept}/restore', [ConceptController::class, 'restore'])->name('concepts.restore')->withTrashed('concept');
     Route::delete('/concepts/{concept}/force', [ConceptController::class, 'forceDelete'])->name('concepts.forceDelete')->withTrashed('concept');
+    Route::post('/concepts/{concept}/improve-explanation', [ConceptController::class, 'improveExplanation'])->name('concepts.improveExplanation');
+    Route::post('/concepts/{concept}/accept-explanation', [ConceptController::class, 'acceptExplanation'])->name('concepts.acceptExplanation');
     Route::get('/domains/{domain}/concepts/archives', [ConceptController::class, 'archives'])->name('concepts.archives');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
