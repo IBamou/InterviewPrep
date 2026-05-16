@@ -9,6 +9,7 @@ use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\GeneratedQuestion;
 use App\Services\GroqService;
+use App\Services\ProgressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,11 +44,10 @@ class ConceptController extends Controller
 
         $data = $request->validate([
             'title' => 'required|string|min:3|max:255',
-            'difficulty' => 'required|in:junior,mid,senior',
         ]);
 
         try {
-            $result = $groq->generateConceptExplanation($data['title'], $domain->name, $data['difficulty']);
+            $result = $groq->generateConceptExplanation($data['title'], $domain->name);
 
             if (isset($result['error']) && $result['error'] === 'invalid') {
                 return response()->json(['error' => $result['message']], 422);
@@ -84,10 +84,18 @@ class ConceptController extends Controller
         ]);
 
         $questionSets = $concept->generatedQuestions
-            ->groupBy('set_number')
-            ->sortKeys();
+            ->groupBy('tier')
+            ->map(function ($tierQuestions) {
+                return $tierQuestions->groupBy('set_number')->sortKeys();
+            });
 
-        return view('concepts.show', compact('concept', 'questionSets'));
+        $tiers = ['junior', 'mid', 'senior'];
+        $tierData = [];
+        foreach ($tiers as $tier) {
+            $tierData[$tier] = $questionSets->get($tier, collect());
+        }
+
+        return view('concepts.show', compact('concept', 'tierData', 'tiers'));
     }
 
     public function practice(Concept $concept, Request $request)
@@ -96,7 +104,9 @@ class ConceptController extends Controller
 
         $concept->load('domain');
 
+        $tier = $request->query('tier', 'junior');
         $questionSets = $concept->generatedQuestions()
+            ->where('tier', $tier)
             ->orderBy('set_number')
             ->orderBy('id')
             ->get()
@@ -118,7 +128,29 @@ class ConceptController extends Controller
             ['path' => $request->url()]
         );
 
-        return view('concepts.practice', compact('concept', 'questionSets', 'currentSet', 'currentSetNumber', 'paginator', 'totalPages', 'setNumbers'));
+        $allTiers = ['junior', 'mid', 'senior'];
+        $tierMetadata = [];
+        foreach ($allTiers as $t) {
+            $tierQuestions = $concept->generatedQuestions()->where('tier', $t)->get()->groupBy('set_number');
+            $sets = [];
+            foreach ($tierQuestions as $setNum => $questions) {
+                $evaluated = $questions->whereNotNull('rating')->count();
+                $total = $questions->count();
+                $sets[] = [
+                    'number' => $setNum,
+                    'evaluated' => $evaluated,
+                    'total' => $total,
+                    'status' => $evaluated === 0 ? 'not_started' : ($evaluated < $total ? 'in_progress' : 'completed'),
+                ];
+            }
+            $tierMetadata[$t] = [
+                'unlocked' => $concept->hasTierUnlocked($t),
+                'setCount' => count($sets),
+                'sets' => $sets,
+            ];
+        }
+
+        return view('concepts.practice', compact('concept', 'questionSets', 'currentSet', 'currentSetNumber', 'paginator', 'totalPages', 'setNumbers', 'tier', 'tierMetadata', 'allTiers'));
     }
 
     public function edit(Concept $concept)
@@ -137,16 +169,6 @@ class ConceptController extends Controller
         $concept->update($request->validated());
 
         return redirect()->route('concepts.show', $concept)->with('success', 'Concept updated successfully.');
-    }
-
-    public function updateStatus(Concept $concept)
-    {
-        $this->authorize('update', $concept);
-
-        $concept->status = $concept->status->next();
-        $concept->save();
-
-        return back()->with('success', 'Status updated to ' . $concept->status->label());
     }
 
     public function archive(Concept $concept)
@@ -195,12 +217,14 @@ class ConceptController extends Controller
 
             $maxSet = $concept->generatedQuestions()->max('set_number') ?? 0;
             $setNumber = $maxSet + 1;
+            $tier = $concept->getHighestUnlockedTier();
 
             foreach ($questions as $question) {
                 GeneratedQuestion::create([
                     'concept_id' => $concept->id,
                     'question' => $question,
                     'set_number' => $setNumber,
+                    'tier' => $tier,
                 ]);
             }
 
@@ -211,7 +235,7 @@ class ConceptController extends Controller
         }
     }
 
-    public function submitAnswers(Request $request, Concept $concept, GroqService $groq)
+    public function submitAnswers(Request $request, Concept $concept, GroqService $groq, ProgressionService $progression)
     {
         $this->authorize('view', $concept);
 
@@ -241,6 +265,14 @@ class ConceptController extends Controller
 
             $evaluations = $groq->evaluateAnswers($concept, $qaPairs);
 
+            $firstQuestion = GeneratedQuestion::find($qaPairs[0]['question_id']);
+            $tier = $firstQuestion ? $firstQuestion->tier : 'junior';
+
+            $totalXp = 0;
+            $totalRating = 0;
+            $ratedCount = 0;
+            $tierRatingSum = 0;
+            $tierRatingCount = 0;
             foreach ($evaluations as $eval) {
                 $idx = $eval['question_index'] ?? null;
                 if ($idx !== null && isset($qaPairs[$idx])) {
@@ -251,11 +283,68 @@ class ConceptController extends Controller
                             'feedback' => $eval['feedback'] ?? null,
                             'model_answer' => $eval['model_answer'] ?? null,
                         ]);
+
+                        if ($eval['rating'] !== null) {
+                            $totalXp += $progression->calculateXpForRating($eval['rating']);
+                            $totalRating += $eval['rating'];
+                            $ratedCount++;
+                            $tierRatingSum += $eval['rating'];
+                            $tierRatingCount++;
+                        }
                     }
                 }
             }
 
-            return redirect()->route('concepts.practice', $concept)->with('success', 'Answers evaluated successfully!');
+            $concept = $progression->awardXp($concept, $totalXp, $tier);
+            $masteryScore = $progression->calculateMasteryScore($concept);
+            $concept->update(['mastery_score' => $masteryScore]);
+
+            $avgRating = $ratedCount > 0 ? $totalRating / $ratedCount : 0;
+            $sessions = $concept->practice_sessions ?? [];
+            $sessions[] = [
+                'date' => now()->toDateString(),
+                'avg_rating' => $avgRating,
+                'xp_gained' => $totalXp,
+            ];
+            $concept->update(['practice_sessions' => $sessions]);
+
+            $tierRatings = $concept->tier_ratings ?? [
+                'junior' => ['sum' => 0, 'count' => 0],
+                'mid' => ['sum' => 0, 'count' => 0],
+                'senior' => ['sum' => 0, 'count' => 0],
+            ];
+            $tierRatings[$tier]['sum'] = ($tierRatings[$tier]['sum'] ?? 0) + $tierRatingSum;
+            $tierRatings[$tier]['count'] = ($tierRatings[$tier]['count'] ?? 0) + $tierRatingCount;
+            $concept->update(['tier_ratings' => $tierRatings]);
+
+            $concept = $progression->recordPracticeSet($concept, $avgRating);
+            $concept = $progression->updateAutoStatus($concept);
+            $nextUnlock = $progression->getNextUnlockThreshold($concept);
+            $masteryTier = $progression->getMasteryTier($concept->mastery_score ?? 0);
+
+            $submittedQuestion = GeneratedQuestion::find($qaPairs[0]['question_id']);
+            $submittedSetNumber = $submittedQuestion ? $submittedQuestion->set_number : 1;
+
+            $tierSets = $concept->generatedQuestions()
+                ->where('tier', $tier)
+                ->orderBy('set_number')
+                ->pluck('set_number')
+                ->unique()
+                ->values()
+                ->toArray();
+            $pageIndex = array_search($submittedSetNumber, $tierSets);
+            $page = $pageIndex !== false ? $pageIndex + 1 : 1;
+
+            return redirect(route('concepts.practice', $concept) . '?tier=' . $tier . '&page=' . $page)->with([
+                'success' => 'Answers evaluated successfully!',
+                'xp_earned' => $totalXp,
+                'new_xp' => $concept->xp,
+                'avg_rating' => round($avgRating, 1),
+                'mastery_score' => $concept->mastery_score,
+                'mastery_tier' => $masteryTier['label'],
+                'next_unlock' => $nextUnlock,
+                'highest_tier' => $concept->getHighestUnlockedTier(),
+            ]);
         } catch (\RuntimeException $e) {
             return back()->with('error', 'Failed to evaluate answers: ' . $e->getMessage());
         }

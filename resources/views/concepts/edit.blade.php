@@ -37,34 +37,6 @@
                 </div>
 
                 <div>
-                    <label class="text-[13px] font-medium text-on-surface mb-2 block">Difficulty</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        @foreach (['junior' => ['Junior', 'text-secondary border-secondary/30 bg-secondary/5'], 'mid' => ['Mid', 'text-amber-600 border-amber-300/50 bg-amber-50'], 'senior' => ['Senior', 'text-error border-error/30 bg-error/5']] as $val => [$label, $colors])
-                        <label class="cursor-pointer">
-                            <input type="radio" name="difficulty" value="{{ $val }}" class="sr-only peer" {{ old('difficulty', $concept->difficulty->value) === $val ? 'checked' : '' }}/>
-                            <div class="flex items-center justify-center py-2.5 border rounded-lg peer-checked:border-primary peer-checked:bg-primary/5 transition-all text-[13px] font-medium {{ $colors }}">
-                                {{ $label }}
-                            </div>
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-[13px] font-medium text-on-surface mb-2 block">Status</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        @foreach (['to_review' => ['To Review', 'text-error border-error/30 bg-error/5'], 'in_progress' => ['In Progress', 'text-amber-600 border-amber-300/50 bg-amber-50'], 'mastered' => ['Mastered', 'text-secondary border-secondary/30 bg-secondary/5']] as $val => [$label, $colors])
-                        <label class="cursor-pointer">
-                            <input type="radio" name="status" value="{{ $val }}" class="sr-only peer" {{ old('status', $concept->status->value) === $val ? 'checked' : '' }}/>
-                            <div class="flex items-center justify-center py-2.5 border rounded-lg peer-checked:border-primary peer-checked:bg-primary/5 transition-all text-[13px] font-medium {{ $colors }}">
-                                {{ $label }}
-                            </div>
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div>
                     <label class="text-[13px] font-medium text-on-surface mb-1.5 block" for="explanation">Explanation</label>
                     <textarea class="w-full p-3 rounded-lg border border-outline-variant/60 text-[13px] focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all resize-none @error('explanation') border-error @enderror" name="explanation" id="explanation" rows="8" required>{{ old('explanation', $concept->explanation) }}</textarea>
                     @error('explanation')<p class="mt-1 text-[12px] text-error">{{ $message }}</p>@enderror

@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\Difficulty;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreConceptRequest extends FormRequest
 {
@@ -18,7 +16,6 @@ class StoreConceptRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'min:3', 'max:255'],
             'explanation' => ['required', 'string'],
-            'difficulty' => ['required', Rule::enum(Difficulty::class)],
         ];
     }
 }

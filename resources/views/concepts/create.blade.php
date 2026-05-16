@@ -56,21 +56,6 @@
                 </div>
 
                 <div>
-                    <label class="text-[13px] font-medium text-on-surface mb-2 block">Difficulty</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        @foreach (['junior' => ['Junior', 'text-secondary border-secondary/30 bg-secondary/5'], 'mid' => ['Mid', 'text-amber-600 border-amber-300/50 bg-amber-50'], 'senior' => ['Senior', 'text-error border-error/30 bg-error/5']] as $val => [$label, $colors])
-                        <label class="cursor-pointer">
-                            <input type="radio" name="difficulty" value="{{ $val }}" class="sr-only peer" {{ old('difficulty', 'junior') === $val ? 'checked' : '' }}/>
-                            <div class="flex items-center justify-center py-2.5 border rounded-lg peer-checked:border-primary peer-checked:bg-primary/5 transition-all text-[13px] font-medium {{ $colors }}">
-                                {{ $label }}
-                            </div>
-                        </label>
-                        @endforeach
-                    </div>
-                    @error('difficulty')<p class="mt-1 text-[12px] text-error">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="text-[13px] font-medium text-on-surface" for="explanation">Explanation</label>
                         <button type="button" @click="generate('{{ route('concepts.generateExplanation', $domain) }}')" :disabled="loading || !canGenerate" class="inline-flex items-center gap-1 text-[11px] text-secondary font-medium hover:opacity-80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
@@ -169,8 +154,6 @@
             generate(url) {
                 this.error = '';
 
-                const difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || 'junior';
-
                 this.loading = true;
 
                 fetch(url, {
@@ -180,7 +163,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json',
                     },
-                    body: JSON.stringify({ title: this.title.trim(), difficulty }),
+                    body: JSON.stringify({ title: this.title.trim() }),
                 })
                 .then(response => response.json())
                 .then(data => {

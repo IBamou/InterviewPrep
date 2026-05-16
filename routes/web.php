@@ -13,10 +13,18 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    $domains = Auth::user()->domains()
+    $user = Auth::user();
+
+    $domains = $user->domains()
         ->withCount('concepts')
         ->withCount(['concepts as mastered_count' => function ($query) {
             $query->where('status', 'mastered');
+        }])
+        ->withCount(['concepts as in_progress_count' => function ($query) {
+            $query->where('status', 'in_progress');
+        }])
+        ->withCount(['concepts as to_review_count' => function ($query) {
+            $query->where('status', 'to_review');
         }])
         ->get();
 
@@ -26,14 +34,21 @@ Route::get('/dashboard', function () {
 
     $topDomain = $domains->sortByDesc(fn($d) => $d->concepts_count > 0 ? $d->mastered_count / $d->concepts_count : 0)->first();
 
-    $reviewConcepts = \App\Models\Concept::whereIn('domain_id', Auth::user()->domains()->pluck('id'))
+    $reviewConcepts = \App\Models\Concept::whereIn('domain_id', $user->domains()->pluck('id'))
         ->where('status', 'to_review')
         ->with('domain')
         ->latest('updated_at')
         ->take(3)
         ->get();
 
-    return view('dashboard', compact('domains', 'totalConcepts', 'totalMastered', 'masteryRate', 'topDomain', 'reviewConcepts'));
+    $staleConcepts = \App\Models\Concept::whereIn('domain_id', $user->domains()->pluck('id'))
+        ->where('updated_at', '<', now()->subDays(30))
+        ->with('domain')
+        ->latest('updated_at')
+        ->take(5)
+        ->get();
+
+    return view('dashboard', compact('domains', 'totalConcepts', 'totalMastered', 'masteryRate', 'topDomain', 'reviewConcepts', 'staleConcepts'));
 })->middleware(['auth', 'verified', 'onboarding'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -65,7 +80,6 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
     Route::get('/concepts/{concept}/practice', [ConceptController::class, 'practice'])->name('concepts.practice');
     Route::get('/concepts/{concept}/edit', [ConceptController::class, 'edit'])->name('concepts.edit');
     Route::put('/concepts/{concept}', [ConceptController::class, 'update'])->name('concepts.update');
-    Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.updateStatus');
     Route::post('/concepts/{concept}/generate-questions', [ConceptController::class, 'generateQuestions'])->name('concepts.generateQuestions')->middleware('throttle:ai-actions');
     Route::post('/concepts/{concept}/submit-answers', [ConceptController::class, 'submitAnswers'])->name('concepts.submitAnswers')->middleware('throttle:ai-actions');
     Route::delete('/concepts/{concept}', [ConceptController::class, 'archive'])->name('concepts.archive');

@@ -66,8 +66,6 @@
             @forelse ($domain->concepts as $concept)
             @php
             $statusColors = ['to_review' => ['dot' => 'bg-error', 'text' => 'text-error', 'bg' => 'bg-error/5'], 'in_progress' => ['dot' => 'bg-amber-500', 'text' => 'text-amber-600', 'bg' => 'bg-amber-50'], 'mastered' => ['dot' => 'bg-secondary', 'text' => 'text-secondary', 'bg' => 'bg-secondary/5']];
-            $diffColors = ['junior' => 'text-secondary', 'mid' => 'text-amber-600', 'senior' => 'text-error'];
-            $diffLabels = ['junior' => 'Junior', 'mid' => 'Mid', 'senior' => 'Senior'];
             $statusLabels = ['to_review' => 'To Review', 'in_progress' => 'In Progress', 'mastered' => 'Mastered'];
             $sc = $statusColors[$concept->status->value];
             @endphp
@@ -80,7 +78,6 @@
                     <div class="text-[12px] text-on-surface-variant/50 line-clamp-1 mt-0.5">{{ Str::limit($concept->explanation, 50) }}</div>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
-                    <span class="text-[10px] font-medium {{ $diffColors[$concept->difficulty->value] ?? '' }}">{{ $diffLabels[$concept->difficulty->value] ?? '' }}</span>
                     <span class="flex items-center gap-1.5 {{ $sc['text'] }} {{ $sc['bg'] }} px-2 py-0.5 rounded text-[10px] font-medium">
                         <span class="w-1.5 h-1.5 rounded-full {{ $sc['dot'] }}"></span>
                         {{ $statusLabels[$concept->status->value] ?? $concept->status->label() }}

@@ -10,7 +10,7 @@ class GeneratedQuestion extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'set_number'];
+    protected $fillable = ['concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'set_number', 'tier'];
 
     public function concept(): BelongsTo
     {
