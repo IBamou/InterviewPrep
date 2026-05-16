@@ -12,7 +12,6 @@ it('has working archives link in concept create page', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'PHP',
-        'color' => '#ff0000',
     ]);
 
     $response = $this->actingAs($this->user)->get(route('concepts.create', $domain));
@@ -25,7 +24,6 @@ it('has working archives link in concept show page', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'Laravel',
-        'color' => '#00ff00',
     ]);
 
     $concept = Concept::create([
@@ -46,7 +44,6 @@ it('has working archives link in concept edit page', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'MySQL',
-        'color' => '#0000ff',
     ]);
 
     $concept = Concept::create([
@@ -67,7 +64,6 @@ it('show page displays concepts count without triggering extra query', function 
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'Redis',
-        'color' => '#ff0000',
     ]);
 
     $concept = Concept::create([
@@ -97,7 +93,6 @@ it('edit page loads domain without error', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'Docker',
-        'color' => '#ff0000',
     ]);
 
     $concept = Concept::create([

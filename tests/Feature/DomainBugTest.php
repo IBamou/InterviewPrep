@@ -12,7 +12,6 @@ it('returns correct concepts_count and mastered_count in index', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'PHP',
-        'color' => '#ff0000',
     ]);
 
     Concept::create(['domain_id' => $domain->id, 'title' => 'C1', 'explanation' => 'E1', 'difficulty' => 'junior', 'status' => 'mastered']);
@@ -33,7 +32,6 @@ it('can restore a soft-deleted domain', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'Laravel',
-        'color' => '#ff0000',
     ]);
 
     $domain->delete();
@@ -49,7 +47,6 @@ it('can force-delete a soft-deleted domain', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'MySQL',
-        'color' => '#ff0000',
     ]);
 
     $domain->delete();
@@ -72,7 +69,6 @@ it('shows create concept button when user has domains', function () {
     Domain::create([
         'user_id' => $this->user->id,
         'name' => 'Docker',
-        'color' => '#00ff00',
     ]);
 
     $response = $this->actingAs($this->user)->get(route('domains.index'));
@@ -92,7 +88,6 @@ it('can restore a soft-deleted concept', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'Redis',
-        'color' => '#ff0000',
     ]);
 
     $concept = Concept::create([
@@ -116,7 +111,6 @@ it('can force-delete a soft-deleted concept', function () {
     $domain = Domain::create([
         'user_id' => $this->user->id,
         'name' => 'PostgreSQL',
-        'color' => '#ff0000',
     ]);
 
     $concept = Concept::create([

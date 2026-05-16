@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ConceptController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Auth;
@@ -33,9 +34,15 @@ Route::get('/dashboard', function () {
         ->get();
 
     return view('dashboard', compact('domains', 'totalConcepts', 'totalMastered', 'masteryRate', 'topDomain', 'reviewConcepts'));
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'onboarding'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
+    Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+});
+
+Route::middleware(['auth', 'onboarding'])->group(function () {
     Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::get('/domains/create', [DomainController::class, 'create'])->name('domains.create');
@@ -51,6 +58,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/accept-description', [DomainController::class, 'acceptDescription'])->name('domains.acceptDescription');
 
     Route::get('/domains/{domain}/concepts/create', [ConceptController::class, 'create'])->name('concepts.create');
+    Route::post('/domains/{domain}/concepts/verify-title', [ConceptController::class, 'verifyTitle'])->name('concepts.verifyTitle')->middleware('throttle:ai-actions');
+    Route::post('/domains/{domain}/concepts/generate-explanation', [ConceptController::class, 'generateExplanation'])->name('concepts.generateExplanation')->middleware('throttle:ai-actions');
     Route::post('/domains/{domain}/concepts', [ConceptController::class, 'store'])->name('concepts.store');
     Route::get('/concepts/{concept}', [ConceptController::class, 'show'])->name('concepts.show');
     Route::get('/concepts/{concept}/practice', [ConceptController::class, 'practice'])->name('concepts.practice');

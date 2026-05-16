@@ -44,7 +44,7 @@
                 <a href="{{ route('domains.show', $domain) }}" class="block bg-white border border-outline-variant/50 rounded-xl p-4 hover:border-primary/50 hover:bg-primary-fixed/20 transition-all">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <span class="w-3 h-3 rounded-full" style="background-color: {{ $domain->color }}"></span>
+                            <span class="material-symbols-outlined text-primary text-[16px]">account_tree</span>
                             <span class="text-[14px] font-medium text-on-surface">{{ $domain->name }}</span>
                         </div>
                         <span class="text-[12px] text-on-surface-variant/50">{{ $domain->concepts_count }} concept{{ $domain->concepts_count !== 1 ? 's' : '' }}</span>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Concept;
 use App\Models\Domain;
+use App\Models\User;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -147,9 +148,9 @@ class GroqService
         return $response->json('data');
     }
 
-    public function generateQuestions(Concept $concept): array
+    public function generateQuestions(Concept $concept, ?User $user = null): array
     {
-        $messages = $this->promptBuilder->buildGenerateQuestionsMessages($concept);
+        $messages = $this->promptBuilder->buildGenerateQuestionsMessages($concept, $user);
 
         $response = $this->client()->post('/chat/completions', [
             'model' => $this->defaultModel,
@@ -281,6 +282,78 @@ class GroqService
         }
 
         return $parsed['improved_explanation'];
+    }
+
+    public function generateConceptExplanation(string $title, string $domainName, string $difficulty): array
+    {
+        $messages = $this->promptBuilder->buildGenerateConceptExplanationMessages($title, $domainName, $difficulty);
+
+        $response = $this->client()->post('/chat/completions', [
+            'model' => $this->defaultModel,
+            'messages' => $messages,
+            'max_tokens' => 500,
+            'temperature' => $this->defaults['temperature'],
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        if ($response->failed()) {
+            $this->handleError($response);
+        }
+
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
+        if (!$content) {
+            throw new \RuntimeException('Groq returned an empty response.');
+        }
+
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed)) {
+            throw new \RuntimeException('Failed to parse explanation from Groq response.');
+        }
+
+        if (isset($parsed['error']) && $parsed['error'] === 'invalid') {
+            return $parsed;
+        }
+
+        if (!isset($parsed['explanation'])) {
+            throw new \RuntimeException('Failed to parse explanation from Groq response.');
+        }
+
+        return ['explanation' => $parsed['explanation']];
+    }
+
+    public function verifyConceptTitle(string $title, string $domainName): array
+    {
+        $messages = $this->promptBuilder->buildVerifyConceptTitleMessages($title, $domainName);
+
+        $response = $this->client()->post('/chat/completions', [
+            'model' => $this->defaultModel,
+            'messages' => $messages,
+            'max_tokens' => 100,
+            'temperature' => 0.2,
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        if ($response->failed()) {
+            $this->handleError($response);
+        }
+
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
+        if (!$content) {
+            throw new \RuntimeException('Groq returned an empty response.');
+        }
+
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed) || !isset($parsed['valid'])) {
+            throw new \RuntimeException('Failed to parse verification result from Groq response.');
+        }
+
+        return $parsed;
     }
 
     protected function handleError(Response $response): void
