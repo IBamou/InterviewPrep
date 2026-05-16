@@ -49,6 +49,10 @@
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span class="text-[11px] text-on-surface-variant/50">{{ $evaluatedCount }}/{{ $questions->count() }} evaluated</span>
+                                    <a href="{{ route('concepts.practice', $concept) }}?page={{ array_search($setNumber, $questionSets->keys()->toArray()) + 1 }}" class="px-2.5 py-1 bg-primary text-white rounded-lg text-[11px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[12px]">play_arrow</span>
+                                        Practice
+                                    </a>
                                     <span class="material-symbols-outlined text-on-surface-variant/50 group-open:rotate-180 transition-transform">expand_more</span>
                                 </div>
                             </summary>
@@ -96,7 +100,7 @@
                                         </div>
                                     @else
                                         <div class="ml-9">
-                                            <p class="text-[12px] text-on-surface-variant/40 italic">Not yet answered — <a href="{{ route('concepts.practice', $concept) }}" class="text-primary hover:underline">go to practice</a></p>
+                                            <p class="text-[12px] text-on-surface-variant/40 italic">Not yet answered — <a href="{{ route('concepts.practice', $concept) }}?page={{ array_search($setNumber, $questionSets->keys()->toArray()) + 1 }}" class="text-primary hover:underline">go to practice</a></p>
                                         </div>
                                     @endif
                                 </div>
