@@ -47,7 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/domains/{domain}/edit', [DomainController::class, 'edit'])->name('domains.edit');
     Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
     Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
-    Route::post('/domains/{domain}/improve-description', [DomainController::class, 'improveDescription'])->name('domains.improveDescription');
+    Route::post('/domains/{domain}/improve-description', [DomainController::class, 'improveDescription'])->name('domains.improveDescription')->middleware('throttle:ai-actions');
     Route::post('/domains/{domain}/accept-description', [DomainController::class, 'acceptDescription'])->name('domains.acceptDescription');
 
     Route::get('/domains/{domain}/concepts/create', [ConceptController::class, 'create'])->name('concepts.create');
@@ -57,12 +57,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/concepts/{concept}/edit', [ConceptController::class, 'edit'])->name('concepts.edit');
     Route::put('/concepts/{concept}', [ConceptController::class, 'update'])->name('concepts.update');
     Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.updateStatus');
-    Route::post('/concepts/{concept}/generate-questions', [ConceptController::class, 'generateQuestions'])->name('concepts.generateQuestions');
-    Route::post('/concepts/{concept}/submit-answers', [ConceptController::class, 'submitAnswers'])->name('concepts.submitAnswers');
+    Route::post('/concepts/{concept}/generate-questions', [ConceptController::class, 'generateQuestions'])->name('concepts.generateQuestions')->middleware('throttle:ai-actions');
+    Route::post('/concepts/{concept}/submit-answers', [ConceptController::class, 'submitAnswers'])->name('concepts.submitAnswers')->middleware('throttle:ai-actions');
     Route::delete('/concepts/{concept}', [ConceptController::class, 'archive'])->name('concepts.archive');
     Route::post('/concepts/{concept}/restore', [ConceptController::class, 'restore'])->name('concepts.restore')->withTrashed('concept');
     Route::delete('/concepts/{concept}/force', [ConceptController::class, 'forceDelete'])->name('concepts.forceDelete')->withTrashed('concept');
-    Route::post('/concepts/{concept}/improve-explanation', [ConceptController::class, 'improveExplanation'])->name('concepts.improveExplanation');
+    Route::post('/concepts/{concept}/improve-explanation', [ConceptController::class, 'improveExplanation'])->name('concepts.improveExplanation')->middleware('throttle:ai-actions');
     Route::post('/concepts/{concept}/accept-explanation', [ConceptController::class, 'acceptExplanation'])->name('concepts.acceptExplanation');
     Route::get('/domains/{domain}/concepts/archives', [ConceptController::class, 'archives'])->name('concepts.archives');
 
