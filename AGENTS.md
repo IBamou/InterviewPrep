@@ -1,42 +1,56 @@
 # AGENTS.md - InterviewPrep Project Rules
 
 ## 🎯 1. Role & Project Context
-You are an expert Laravel 11 developer acting as an AI Coding Agent. You are building "InterviewPrep", a web application for developers to structure their technical knowledge and generate mock interview questions using the Groq AI API.
+You are an expert Laravel 13 developer acting as an AI Coding Agent. You are building "InterviewPrep", a web application for developers to structure their technical knowledge and generate mock interview questions using the Groq AI API.
 
 **CRUCIAL BUSINESS LOGIC:** 
 This app is a Personal Knowledge Tracker, NOT an auto-generator. 
 - Users MUST manually create Domains and Concepts (writing their own explanations). 
-- The AI (Groq) is ONLY used to generate 5 interview questions based on the user's manual input.
-- Never auto-generate study materials, domains, or concepts.
+- The AI (Groq) is ONLY used to assist with generating interview questions, improving descriptions/explanations, verifying concept titles, and generating concept explanations.
+- Never auto-generate study materials, domains, or concepts without user initiation.
 
 ## 🛠 2. Tech Stack
 - **Backend:** Laravel 13, PHP 8.4+
 - **Database:** MySQL
-- **Frontend:** Blade Templates, HTML5, CSS3, TailwindCSS
+- **Frontend:** Blade Templates, HTML5, CSS3, TailwindCSS, Alpine.js
 - **Auth:** Laravel Breeze
-- **AI Integration:** Groq API
+- **AI Integration:** Groq API (via native `Illuminate\Support\Facades\Http`)
 - **Debugging:** Laravel Telescope
 
 ## ⚠️ 3. Strict API & AI Constraints (Grading Criteria)
-When implementing the AI generation feature (US11, US12, US13), you MUST adhere to these rules:
+When implementing any AI feature, you MUST adhere to these rules:
 1. **Zero External Packages:** DO NOT install `guzzlehttp/guzzle`, `openai-php`, or any AI SDKs. You MUST use Laravel's native `Illuminate\Support\Facades\Http`.
 2. **Authentication:** Read the API key strictly from `.env` using `env('GROQ_API_KEY')`. NEVER hardcode keys.
 3. **The API Call:** Use `Http::withToken(...)->post(...)`.
-4. **JSON Enforcement:** Instruct the Groq API to return a strict JSON object containing an array of 5 strings. Handle JSON decoding safely.
-5. **Mandatory Error Handling:** Wrap the API call in a `try...catch` block. If the API fails, times out, or returns an error, catch the exception and return a clean error message via Laravel session flash (`session()->flash('error', '...')`). NEVER show a blank page or raw stack trace to the user.
-6. **Database Persistence First:** The generated questions MUST be saved to the database (`generated_questions` table) BEFORE being displayed to the user.
+4. **JSON Enforcement:** Instruct the Groq API to return strict JSON objects. Handle JSON decoding safely.
+5. **Mandatory Error Handling:** Wrap API calls in `try...catch` blocks. If the API fails, times out, or returns an error, catch the exception and return a clean error message via Laravel session flash or JSON error response. NEVER show a blank page or raw stack trace to the user.
+6. **Database Persistence First:** Generated questions MUST be saved to the database (`generated_questions` table) BEFORE being displayed to the user.
 
 ## 🗄️ 4. Database & Architecture Rules
 - **Migrations:** Always generate migrations for new features.
 - **Relationships:** Use standard Eloquent relationships. A User has many Domains; a Domain has many Concepts; a Concept has many GeneratedQuestions.
 - **Security (Multi-tenancy):** Users must only see, edit, and delete their OWN data. Always scope queries to the authenticated user (e.g., `auth()->user()->domains()`).
-- **Enums:** Use strict values for Concept attributes:
-  - `difficulty`: 'junior', 'mid', 'senior'
-  - `status`: 'to_review', 'in_progress', 'mastered'
-- **Enum Casting (PHP 8.4):** Use custom `App\Casts\EnumCast` for automatic enum conversion in models
-- **Soft Deletes:** Implement the `SoftDeletes` trait on the `Concept` model.
-- **Specific Schema Requirement:** The `generated_questions` table MUST have a `concept_id` foreign key.
-- **Controllers & Validation:** Keep controllers thin. Use Form Request classes for all validation logic.
+- **Enums:** Use PHP 8.1+ backed enums with native Laravel casting:
+  - `difficulty`: 'junior', 'mid', 'senior' (`App\Enums\Difficulty`)
+  - `status`: 'to_review', 'in_progress', 'mastered' (`App\Enums\Status`)
+  - `user_status`: 'student', 'professional' (`App\Enums\UserStatus`)
+  - `specialization`: 'backend', 'frontend', 'fullstack', 'devops', 'data', 'student' (`App\Enums\Specialization`)
+  - `experience_level`: '0', '0-1', '1-3', '3-5', '5-10', '10+' (`App\Enums\ExperienceLevel`)
+  - `interview_goal`: 'first_job', 'career_switch', 'promotion', 'stay_sharp', 'job_hunting' (`App\Enums\InterviewGoal`)
+- **Soft Deletes:** Implemented on both `Domain` and `Concept` models.
+- **Controllers & Validation:** Keep controllers thin. Use Form Request classes for all validation logic. Use `Rule::enum()` for enum validation.
+
+### User Profile Fields
+The `users` table contains profile fields for personalized AI prompts:
+- `status` (UserStatus enum)
+- `specialization` (Specialization enum)
+- `experience_years` (ExperienceLevel enum)
+- `tech_stack` (JSON array)
+- `interview_goal` (InterviewGoal enum)
+- `onboarding_completed` (boolean, default: false)
+
+### Onboarding Middleware
+New users with `onboarding_completed = false` are redirected to `/onboarding` before accessing any app features. The middleware is applied to the dashboard and all protected routes.
 
 ## 🧠 5. AI Agent Workflow Rules
 When asked to build a feature, you MUST follow this exact sequence:
@@ -58,3 +72,29 @@ Remind me to commit using this specific format to track AI usage for the evaluat
 - DO NOT expose API keys in version control.
 - DO NOT create seeders that generate fake AI content.
 - DO NOT use JavaScript color-picker libraries; use simple text inputs for hex codes.
+
+## 📁 8. Project Structure
+```
+app/
+├── Enums/           # PHP 8.1+ backed enums
+├── Http/
+│   ├── Controllers/ # Thin controllers, delegate to services
+│   ├── Middleware/  # Onboarding enforcement
+│   └── Requests/    # Form request validation
+├── Models/          # Eloquent models with relationships
+├── Providers/       # Service providers (rate limiters, etc.)
+└── Services/
+    ├── GroqService.php      # HTTP client for Groq API
+    └── PromptBuilder.php    # Builds AI prompts for all AI features
+
+resources/views/
+├── components/
+│   └── onboarding/  # Reusable onboarding step components
+├── onboarding/      # Onboarding flow page
+├── domains/         # Domain CRUD views
+├── concepts/        # Concept CRUD + practice views
+├── profile/         # Profile settings
+└── search/          # Global search
+
+specs/               # Feature specifications (read before coding)
+```

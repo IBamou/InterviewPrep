@@ -2,20 +2,23 @@
 
 ## 🎯 Feature Goal
 
-Allow an authenticated user to manage their technical domains (e.g., PHP, Laravel, MySQL) in order to organize their interview preparation.
+Allow an authenticated user to manage their technical domains (e.g., PHP, Laravel, MySQL) to organize their interview preparation.
 
 ---
 
 ## ✅ What I want
 
 - The user can create a domain with:
-  - name (string, required)
-  - color (string, required)
+  - name (string, required, min:3, max:255)
+  - description (text, optional)
 
 - The user can:
   - view a list of their domains
+  - view domain detail with concepts list
   - edit a domain
-  - delete a domain
+  - delete a domain (soft delete)
+  - restore deleted domains
+  - permanently delete (force delete)
 
 - Each domain:
   - belongs to a user
@@ -23,34 +26,44 @@ Allow an authenticated user to manage their technical domains (e.g., PHP, Larave
 
 - In the domains list, display:
   - domain name
-  - color (as a badge or simple styled text)
-  - total number of concepts in the domain
-  - number of mastered concepts (status = "maîtrisé")
+  - description
+  - total number of concepts
+  - number of mastered concepts
+  - mastery percentage with progress bar
+
+- AI description improvement:
+  - "Improve with AI" button if description exists
+  - "Generate with AI" button if description is empty
+  - Accept/Reject flow for suggestions
 
 ---
 
 ## ❌ What I DON'T want
 
-- No AI usage in this feature
-- No API routes (web routes only)
-- No SPA or frontend frameworks (no Vue, React, etc.)
-- No complex UI (simple Blade templates only)
-- No unnecessary features (pagination optional, not required)
+- No color field (removed — inconsistent with design system)
 - No access to other users' domains
+- No SPA or frontend frameworks
+- No complex UI (simple Blade templates only)
 
 ---
 
 ## 🧱 Technical Requirements
 
 - Use Laravel Breeze for authentication
-- All routes must be protected by `auth` middleware
+- All routes protected by `auth` and `onboarding` middleware
 - Use a Resource Controller: `DomainController`
 - Use Eloquent ORM (no raw SQL)
+- Use Form Request classes for validation
 
 ### Relationships
 - User → hasMany Domain
 - Domain → belongsTo User
 - Domain → hasMany Concept
+
+### Soft Deletes
+- `SoftDeletes` trait on Domain model
+- Archived domains accessible via `/domains/archives`
+- Restore and force-delete actions available
 
 ---
 
@@ -60,9 +73,10 @@ Allow an authenticated user to manage their technical domains (e.g., PHP, Larave
 - id (primary key)
 - user_id (foreign key → users.id)
 - name (string)
-- color (string)
+- description (text, nullable)
 - created_at (timestamp)
 - updated_at (timestamp)
+- deleted_at (timestamp, nullable - SoftDeletes)
 
 ---
 
@@ -71,64 +85,46 @@ Allow an authenticated user to manage their technical domains (e.g., PHP, Larave
 - name:
   - required
   - string
+  - min:3
   - max:255
 
-- color:
-  - required
+- description:
+  - nullable
   - string
-  - max:50
 
 ---
 
-## 🔄 Expected Routes (Resource)
+## 🔄 Routes
 
-- GET /domains → index
-- GET /domains/create → create
-- POST /domains → store
-- GET /domains/{domain}/edit → edit
-- PUT /domains/{domain} → update
-- DELETE /domains/{domain} → destroy
+- `GET /domains` → index
+- `GET /domains/create` → create
+- `POST /domains` → store
+- `GET /domains/{domain}` → show
+- `GET /domains/{domain}/edit` → edit
+- `PUT /domains/{domain}` → update
+- `DELETE /domains/{domain}` → destroy (soft delete)
+- `GET /domains/archives` → archives
+- `POST /domains/{domain}/restore` → restore
+- `DELETE /domains/{domain}/force` → forceDelete
+- `POST /domains/{domain}/improve-description` → AI improvement
+- `POST /domains/{domain}/accept-description` → Accept AI suggestion
 
 ---
 
 ## 🧠 Business Rules
 
 - A user can only see their own domains
-- A user cannot edit or delete another user’s domain
-- When a domain is deleted, related concepts can remain or be handled later (no cascade required now)
+- A user cannot edit or delete another user's domain
+- Soft-deleted domains are hidden from normal views
+- Restoring a domain does not restore its concepts (handled separately)
 
 ---
 
-## 🖥️ Views المتوقع (Blade)
+## 🖥️ Views
 
-- domains/index.blade.php → list domains
-- domains/create.blade.php → create form
-- domains/edit.blade.php → edit form
-
----
-
-## 🧪 Notes for AI (important)
-
-- Keep controllers simple and readable
-- Use `$request->validate()` for validation
-- Use route model binding (`Domain $domain`)
-- Always filter domains by `auth()->id()`
-- Do not generate unnecessary services or repositories
-
----
-
-## 🔄 Workflow (AI Agent)
-
-Pour chaque composant de cette feature, suivre ce cycle:
-
-1. **Create Branch** - Créer une nouvelle branche pour le composant
-2. **Add Work** - Implémenter le composant (modèle, controller, routes, views, etc.)
-3. **Review** - Soumettre le travail pour review (pas de commit/push)
-4. **Commit & Push** - Après validation, commiter et pousser (sur instruction explicite)
-
-### Branches créées pour cette feature:
-
-- `feature/domain-migration` - ✅ Migration table domains
-- `feature/domain-model` - ✅ Model Domain
-- `feature/domain-routes` - 🔄 Routes & Controller (en cours)
-- `feature/domain-views` - À faire (Blade templates)
+- `domains/index.blade.php` → list domains with stats
+- `domains/create.blade.php` → create form
+- `domains/edit.blade.php` → edit form
+- `domains/show.blade.php` → domain detail with concepts list and description AI section
+- `domains/archives.blade.php` → soft deleted domains (restore + forceDelete)
+- `components/domain-card.blade.php` → reusable domain card

@@ -18,10 +18,14 @@ Allow an authenticated user to manage concepts within their domains - each conce
 - explanation: what it is, how it works, why it's important - written in user's own words
 - difficulty: junior / mid / senior
 - status: to_review (default)
+- AI "Generate with AI" button for explanation (requires title, min 3 chars)
+- AI "Verify" button for title (detects typos, suggests corrections, rejects gibberish)
 
 ### US7 - View concept detail
 - Show title, full explanation, difficulty, status
-- Show generated interview questions (from AI)
+- Show generated interview questions (from AI) grouped by set
+- AI "Improve with AI" / "Generate with AI" button for explanation
+- Practice sidebar card
 
 ### US8 - Edit a concept
 - Edit title, explanation, difficulty, or status
@@ -31,13 +35,14 @@ Allow an authenticated user to manage concepts within their domains - each conce
 - No need to open edit form
 
 ### US10 - Delete a concept
-- Delete a concept
+- Delete a concept (soft delete)
+- Restore and force-delete from archives
 
 ---
 
 ## ❌ What I DON'T want
 
-- No AI generation in this spec (US11-13 separate)
+- No auto-generation of concepts
 - No API routes (web routes only)
 - No SPA or frontend frameworks
 - No complex UI (simple Blade templates only)
@@ -48,19 +53,19 @@ Allow an authenticated user to manage concepts within their domains - each conce
 ## 🧱 Technical Requirements
 
 - Use Laravel Breeze for authentication
-- All routes must be protected by `auth` middleware
+- All routes protected by `auth` and `onboarding` middleware
 - Use a Resource Controller: `ConceptController`
 - Use Eloquent ORM (no raw SQL)
+- Use Form Request classes for validation
 
 ### Relationships
 - Domain → hasMany Concept
 - Concept → belongsTo Domain
 - Concept → hasMany GeneratedQuestion
 
-### Enums (strict values) - Using PHP 8.1+ Enums
-- `difficulty`: 'junior', 'mid', 'senior' (App\Enums\Difficulty)
-- `status`: 'to_review', 'in_progress', 'mastered' (App\Enums\Status)
-- Model uses custom `App\Casts\EnumCast` casting for automatic conversion (PHP 8.4 / Laravel 13)
+### Enums (PHP 8.1+ backed enums)
+- `difficulty`: 'junior', 'mid', 'senior' (`App\Enums\Difficulty`)
+- `status`: 'to_review', 'in_progress', 'mastered' (`App\Enums\Status`)
 
 ### Soft Deletes
 - Implement `SoftDeletes` trait on Concept model
@@ -87,6 +92,7 @@ Allow an authenticated user to manage concepts within their domains - each conce
 - title:
   - required
   - string
+  - min:3
   - max:255
 
 - explanation:
@@ -95,28 +101,35 @@ Allow an authenticated user to manage concepts within their domains - each conce
 
 - difficulty:
   - required
-  - in:junior,mid,senior
+  - enum: junior, mid, senior
 
 - status:
   - required
-  - in:to_review,in_progress,mastered
+  - enum: to_review, in_progress, mastered
   - default: to_review
 
 ---
 
-## 🔄 Expected Routes (Explicit)
+## 🔄 Routes
 
-- GET    /domains/{domain}/concepts              → index (with filters)
-- GET    /domains/{domain}/concepts/create       → create
-- POST   /domains/{domain}/concepts             → store
-- GET    /concepts/{concept}                    → show
-- GET    /concepts/{concept}/edit                → edit
-- PUT    /concepts/{concept}                    → update
-- PATCH  /concepts/{concept}/status              → updateStatus (quick change)
-- DELETE /concepts/{concept}                     → archive (soft delete)
-- POST   /concepts/{concept}/restore            → restore
-- DELETE /concepts/{concept}/force              → forceDelete (permanent)
-- GET    /domains/{domain}/concepts/archives   → archives (list archived)
+- `GET /domains/{domain}/concepts` → index (with filters)
+- `GET /domains/{domain}/concepts/create` → create
+- `POST /domains/{domain}/concepts` → store
+- `POST /domains/{domain}/concepts/verify-title` → AI title verification
+- `POST /domains/{domain}/concepts/generate-explanation` → AI explanation generation
+- `GET /concepts/{concept}` → show
+- `GET /concepts/{concept}/practice` → practice
+- `GET /concepts/{concept}/edit` → edit
+- `PUT /concepts/{concept}` → update
+- `PATCH /concepts/{concept}/status` → updateStatus (quick change)
+- `DELETE /concepts/{concept}` → archive (soft delete)
+- `POST /concepts/{concept}/restore` → restore
+- `DELETE /concepts/{concept}/force` → forceDelete (permanent)
+- `POST /concepts/{concept}/improve-explanation` → AI improvement
+- `POST /concepts/{concept}/accept-explanation` → Accept AI suggestion
+- `POST /concepts/{concept}/generate-questions` → AI question generation
+- `POST /concepts/{concept}/submit-answers` → AI answer evaluation
+- `GET /domains/{domain}/concepts/archives` → archives (list archived)
 
 ---
 
@@ -126,50 +139,17 @@ Allow an authenticated user to manage concepts within their domains - each conce
 - A user cannot access other users' concepts
 - Status changes: to_review → in_progress → mastered (cycling or direct)
 - Soft delete: concepts go to "trash" before permanent deletion
+- Title verification is optional — user can submit without verifying
+- AI-generated explanations during creation are not auto-saved
 
 ---
 
-## 🖥️ Views (Blade)
+## 🖥️ Views
 
-- concepts/index.blade.php → list concepts with status/difficulty filters
-- concepts/create.blade.php → create form
-- concepts/edit.blade.php → edit form + archive button
-- concepts/show.blade.php → concept detail + placeholder for generated questions
-- concepts/archives.blade.php → soft deleted concepts (restore + forceDelete)
-- components/concept-card.blade.php → reusable concept card
-
----
-
-## 🧪 Notes for AI (important)
-
-- Keep controllers simple and readable
-- Use Form Request classes for validation
-- Use route model binding (`Concept $concept`)
-- Always filter by domain AND user ownership
-- Use enum casting for difficulty/status
-
----
-
-## 🔄 Workflow (AI Agent)
-
-Pour chaque composant de cette feature, suivre ce cycle:
-
-1. **Create Branch** - Créer une nouvelle branche pour le composant
-2. **Add Work** - Implémenter le composant (migration, model, controller, routes, views, etc.)
-3. **Review** - Soumettre le travail pour review (pas de commit/push)
-4. **Commit & Push** - Après validation, commiter et pousser (sur instruction explicite)
-
-### Branches créées pour cette feature:
-
-- `feature/concept-migration` - ✅ Migration table concepts
-- `feature/concept-model` - ✅ Model Concept avec SoftDeletes
-- `feature/concept-enums` - ✅ PHP Enums Difficulty & Status
-- `feature/concept-routes` - ✅ Routes avec soft delete actions
-- `feature/concept-controller` - ✅ Controller avec CRUD + status change
-- `feature/concept-policy` - ✅ Policies DomainPolicy & ConceptPolicy
-- `feature/concept-form-request` - ✅ Form requests avec enum validation
-- `feature/concept-views` - ✅ Views + ConceptCard component
-
-### Notes
-- US11-13 (Groq API) non implémenté - placeholder dans show.blade.php et controller
-- Filter combiné (status + difficulty) implémenté dans index
+- `concepts/index.blade.php` → list concepts with status/difficulty filters
+- `concepts/create.blade.php` → create form with AI generate/verify buttons
+- `concepts/edit.blade.php` → edit form + archive button
+- `concepts/show.blade.php` → concept detail with collapsible question sets and evaluations
+- `concepts/practice.blade.php` → practice form with pagination
+- `concepts/archives.blade.php` → soft deleted concepts (restore + forceDelete)
+- `components/concept-card.blade.php` → reusable concept card
