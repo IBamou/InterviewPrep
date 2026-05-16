@@ -237,4 +237,30 @@ class ConceptController extends Controller
         return view('concepts.archives', compact('concepts', 'domain'));
     }
 
+    public function improveExplanation(Concept $concept, GroqService $groq)
+    {
+        $this->authorize('update', $concept);
+
+        try {
+            $suggestion = $groq->improveConceptExplanation($concept);
+
+            return response()->json(['suggestion' => $suggestion]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['error' => 'Failed to generate suggestion: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function acceptExplanation(Request $request, Concept $concept)
+    {
+        $this->authorize('update', $concept);
+
+        $data = $request->validate([
+            'explanation' => 'required|string|max:5000',
+        ]);
+
+        $concept->update(['explanation' => $data['explanation']]);
+
+        return redirect()->route('concepts.show', $concept)->with('success', 'Explanation updated successfully.');
+    }
+
 }

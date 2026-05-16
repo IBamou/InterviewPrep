@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Concept;
+use App\Models\Domain;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -216,6 +217,70 @@ class GroqService
         }
 
         return $parsed['evaluations'];
+    }
+
+    public function improveDomainDescription(Domain $domain): string
+    {
+        $messages = $this->promptBuilder->buildImproveDomainDescriptionMessages($domain);
+
+        $response = $this->client()->post('/chat/completions', [
+            'model' => $this->defaultModel,
+            'messages' => $messages,
+            'max_tokens' => 300,
+            'temperature' => $this->defaults['temperature'],
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        if ($response->failed()) {
+            $this->handleError($response);
+        }
+
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
+        if (!$content) {
+            throw new \RuntimeException('Groq returned an empty response.');
+        }
+
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed) || !isset($parsed['improved_description'])) {
+            throw new \RuntimeException('Failed to parse improved description from Groq response.');
+        }
+
+        return $parsed['improved_description'];
+    }
+
+    public function improveConceptExplanation(Concept $concept): string
+    {
+        $messages = $this->promptBuilder->buildImproveConceptExplanationMessages($concept);
+
+        $response = $this->client()->post('/chat/completions', [
+            'model' => $this->defaultModel,
+            'messages' => $messages,
+            'max_tokens' => 500,
+            'temperature' => $this->defaults['temperature'],
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        if ($response->failed()) {
+            $this->handleError($response);
+        }
+
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
+        if (!$content) {
+            throw new \RuntimeException('Groq returned an empty response.');
+        }
+
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed) || !isset($parsed['improved_explanation'])) {
+            throw new \RuntimeException('Failed to parse improved explanation from Groq response.');
+        }
+
+        return $parsed['improved_explanation'];
     }
 
     protected function handleError(Response $response): void
