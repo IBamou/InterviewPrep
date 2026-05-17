@@ -20,6 +20,9 @@
         $streakData = session('streak');
         $streakDays = $streakData['current'] ?? 0;
     @endphp
+    <script>
+        try { localStorage.removeItem('practice_draft_{{ $concept->id }}_{{ $tier }}_{{ session('submitted_set', $currentSetNumber) }}'); } catch(e) {}
+    </script>
     <div class="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-xl">
         <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">trending_up</span>
@@ -59,12 +62,13 @@
         <div>
             <h2 class="font-display-lg text-display-lg text-on-surface">Practice: {{ $concept->title }}</h2>
         </div>
-        <form method="POST" action="{{ route('concepts.generateQuestions', $concept) }}">
+        <form method="POST" action="{{ route('concepts.generateQuestions', $concept) }}" x-data="{ loading: false }" @submit="loading = true">
             @csrf
             <input type="hidden" name="tier" value="{{ $tier }}"/>
-            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[14px]">add</span>
-                Generate New Set
+            <button type="submit" :disabled="loading" :class="loading ? 'opacity-50 cursor-not-allowed' : ''" class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
+                <span x-show="!loading" class="material-symbols-outlined text-[14px]">add</span>
+                <span x-show="loading" class="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                <span x-text="loading ? 'Generating...' : 'Generate New Set'"></span>
             </button>
         </form>
     </div>
@@ -143,6 +147,14 @@
 
         <div class="lg:col-span-3">
             @if ($currentSet && $currentSet->isNotEmpty())
+                @php
+                    $needsSubmission = $currentSet->contains(fn($q) => $q->rating === null);
+                @endphp
+                <div x-show="draftRestored" x-cloak x-transition
+                     class="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[12px] text-amber-700 text-center">
+                    📝 Draft restored — your previous answers are back
+                </div>
+
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h3 class="text-[16px] font-semibold text-on-surface">
@@ -152,13 +164,77 @@
                             </span>
                         </h3>
                     </div>
+                    <div class="flex items-center gap-1.5">
+                        @if ($needsSubmission)
+                        <template x-for="(_, i) in Array.from({length: total})" :key="i">
+                            <span class="w-2.5 h-2.5 rounded-full transition-all duration-300"
+                                  :class="i === current ? 'w-7 bg-primary' : answered[i] ? 'bg-primary/50' : 'bg-outline-variant/40'"
+                                  :title="(i + 1) + (answered[i] ? '' : ' (skipped)')"></span>
+                        </template>
+                        @endif
+                    </div>
                 </div>
 
-                <form method="POST" action="{{ route('concepts.submitAnswers', $concept) }}">
+                <form method="POST" action="{{ route('concepts.submitAnswers', $concept) }}"
+                      @keydown.left.prevent="if ($event.target.tagName !== 'TEXTAREA' && !isFirst) prev()"
+                      @keydown.right.prevent="if ($event.target.tagName !== 'TEXTAREA' && !isLast) next()"
+                      x-data="{
+                        current: 0,
+                        initialAnswers: {{ Js::from($currentSet->mapWithKeys(fn($q) => [$q->id => $q->answer])->toArray()) }},
+                        draftRestored: false,
+                        get storageKey() {
+                            return 'practice_draft_{{ $concept->id }}_{{ $tier }}_{{ $currentSetNumber }}';
+                        },
+                        get total() { return {{ $currentSet->count() }}; },
+                        get isLast() { return this.current === this.total - 1; },
+                        get isFirst() { return this.current === 0; },
+                        prev() { if (this.current > 0) this.current--; },
+                        next() { if (this.current < this.total - 1) this.current++; },
+                        get progress() { return this.current + 1 + ' / ' + this.total; },
+                        get answered() {
+                            return Object.values(this.initialAnswers).map(a => a && a.trim() ? true : false);
+                        },
+                        init() {
+                            @if ($needsSubmission)
+                            const saved = localStorage.getItem(this.storageKey);
+                            if (saved) {
+                                try {
+                                    const parsed = JSON.parse(saved);
+                                    if (parsed.answers) {
+                                        let restored = 0;
+                                        Object.keys(parsed.answers).forEach(key => {
+                                            if (this.initialAnswers.hasOwnProperty(key) && parsed.answers[key]?.trim()) {
+                                                this.initialAnswers[key] = parsed.answers[key];
+                                                restored++;
+                                            }
+                                        });
+                                        if (restored > 0) this.draftRestored = true;
+                                    }
+                                    if (typeof parsed.current === 'number' && parsed.current < this.total) {
+                                        this.current = parsed.current;
+                                    }
+                                } catch(e) {}
+                            }
+                            this._saveTimer = setInterval(() => {
+                                localStorage.setItem(this.storageKey, JSON.stringify({
+                                    current: this.current,
+                                    answers: this.initialAnswers
+                                }));
+                            }, 1500);
+                            @endif
+                            this.$watch('current', () => {
+                                setTimeout(() => this.$refs['textarea_' + this.current]?.focus(), 50);
+                            });
+                        }
+                      }">
                     @csrf
-                    <div class="space-y-5">
+                    <div class="space-y-4">
                         @foreach ($currentSet as $index => $q)
-                        <section class="bg-white border border-outline-variant/50 rounded-xl overflow-hidden">
+                        <section x-show="current === {{ $index }}" x-cloak
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 translate-x-6"
+                                 x-transition:enter-end="opacity-100 translate-x-0"
+                                 class="bg-white border border-outline-variant/50 rounded-xl overflow-hidden">
                             <div class="px-5 py-3 border-b border-outline-variant/30 bg-surface-container/30">
                                 <div class="flex gap-3">
                                     <span class="w-6 h-6 rounded-full {{ $tierColors[$tier]['bg'] }} {{ $tierColors[$tier]['text'] }} text-[11px] font-semibold flex items-center justify-center shrink-0 mt-0.5">{{ $loop->iteration }}</span>
@@ -204,7 +280,13 @@
                                     </div>
                                 @else
                                     <div>
-                                        <textarea name="answers[{{ $index }}][answer]" rows="4" class="w-full rounded-lg border border-outline-variant/60 text-[12px] p-3 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all resize-none placeholder:text-on-surface-variant/30" placeholder="Type your answer...">{{ $q->answer }}</textarea>
+                                        <textarea x-model="initialAnswers[{{ $q->id }}]"
+                                                  name="answers[{{ $index }}][answer]"
+                                                  x-ref="textarea_{{ $index }}"
+                                                  rows="6"
+                                                  class="w-full rounded-xl border border-outline-variant/60 text-[12px] p-3 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all resize-y placeholder:text-on-surface-variant/30 font-mono"
+                                                  placeholder="Write your answer..."></textarea>
+                                        <p class="text-[11px] text-on-surface-variant/40 mt-1.5 text-center">Tip: Leave blank if you don't know — you'll still get the model answer to learn from</p>
                                         <input type="hidden" name="answers[{{ $index }}][question_id]" value="{{ $q->id }}"/>
                                     </div>
                                 @endif
@@ -212,15 +294,33 @@
                         </section>
                         @endforeach
 
-                        @if ($currentSet->contains(fn($q) => $q->rating === null))
-                        <div class="flex items-center gap-3 pt-2">
-                            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[14px]">rate_review</span>
-                                Submit All for AI Review
-                            </button>
-                            <p class="text-[11px] text-on-surface-variant/40">Leave blank if you don't know — you'll get the model answer to learn (min +2 XP)</p>
+                        <div class="grid grid-cols-3 items-center pt-4 border-t border-outline-variant/30">
+                            <div class="flex justify-start">
+                                <button type="button" @click="prev()" x-show="!isFirst"
+                                        class="px-3 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-[12px] font-medium hover:bg-surface-container transition-all flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[14px]">chevron_left</span>
+                                    Previous
+                                </button>
+                            </div>
+                            <div class="flex justify-center">
+                                <span class="text-[13px] text-on-surface-variant/50 font-semibold" x-text="progress"></span>
+                            </div>
+                            <div class="flex items-center justify-end gap-2">
+                                <button type="button" @click="next()" x-show="!isLast"
+                                        class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-[12px] font-medium hover:bg-surface-container transition-all flex items-center gap-1">
+                                    Next
+                                    <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                                </button>
+                                @if ($needsSubmission)
+                                <button type="button" x-show="isLast"
+                                        @click="showConfirmModal('Submit answers', 'Submit all ' + total + ' answers for AI review?', () => $el.closest('form').submit(), 'success')"
+                                        class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[14px]">rate_review</span>
+                                    Submit
+                                </button>
+                                @endif
+                            </div>
                         </div>
-                        @endif
                     </div>
                 </form>
             @else
@@ -228,12 +328,13 @@
                     <span class="material-symbols-outlined text-on-surface-variant/30 text-[48px] mb-3">quiz</span>
                     <h3 class="text-[16px] font-semibold text-on-surface mb-1">No Practice Questions Yet</h3>
                     <p class="text-[13px] text-on-surface-variant/60 mb-4">Generate your first set of questions to start practicing.</p>
-                    <form method="POST" action="{{ route('concepts.generateQuestions', $concept) }}" class="inline">
+                    <form method="POST" action="{{ route('concepts.generateQuestions', $concept) }}" class="inline" x-data="{ loading: false }" @submit="loading = true">
                         @csrf
                         <input type="hidden" name="tier" value="{{ $tier }}"/>
-                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[14px]">bolt</span>
-                            Generate Questions
+                        <button type="submit" :disabled="loading" :class="loading ? 'opacity-50 cursor-not-allowed' : ''" class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
+                            <span x-show="!loading" class="material-symbols-outlined text-[14px]">bolt</span>
+                            <span x-show="loading" class="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                            <span x-text="loading ? 'Generating...' : 'Generate Questions'"></span>
                         </button>
                     </form>
                 </div>

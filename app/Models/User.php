@@ -26,6 +26,17 @@ class User extends Authenticatable
         return $this->hasMany(Domain::class);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user) {
+            $domainIds = $user->domains()->pluck('id');
+            $conceptIds = Concept::whereIn('domain_id', $domainIds)->pluck('id');
+            GeneratedQuestion::whereIn('concept_id', $conceptIds)->delete();
+            Concept::whereIn('domain_id', $domainIds)->delete();
+            $user->domains()->delete();
+        });
+    }
+
     protected function casts(): array
     {
         return [

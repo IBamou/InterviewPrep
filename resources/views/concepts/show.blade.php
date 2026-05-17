@@ -80,7 +80,7 @@
                 $colors = $tierColors[$tier];
             @endphp
             <section class="bg-white border {{ $isUnlocked ? $colors['border'] : 'border-outline-variant/30' }} rounded-xl overflow-hidden">
-                <details class="group" @if ($isUnlocked) open @endif>
+                <details class="group">
                     <summary class="px-5 py-4 border-b {{ $isUnlocked ? 'border-outline-variant/30' : 'border-transparent' }} flex items-center justify-between {{ $isUnlocked ? 'bg-surface-container/30 hover:bg-surface-container/50' : 'bg-surface-container-low/50' }} cursor-pointer transition-colors">
                         <div class="flex items-center gap-3">
                             <span class="material-symbols-outlined {{ $isUnlocked ? $colors['text'] : 'text-on-surface-variant/30' }} text-[20px]" style="font-variation-settings: 'FILL' 1;">{{ $isUnlocked ? 'shield' : 'lock' }}</span>
@@ -186,11 +186,12 @@
                         <div class="flex flex-col items-center justify-center py-8 text-center">
                             <span class="material-symbols-outlined text-on-surface-variant/30 text-[32px] mb-2">quiz</span>
                             <p class="text-[13px] text-on-surface-variant/50 mb-1">No practice sets yet</p>
-                            <form method="POST" action="{{ route('concepts.generateQuestions', $concept) }}" class="mt-2">
+                            <form method="POST" action="{{ route('concepts.generateQuestions', $concept) }}" class="mt-2" x-data="{ loading: false }" @submit="loading = true">
                                 @csrf
-                                <button type="submit" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-[14px]">add</span>
-                                    Generate Set
+                                <button type="submit" :disabled="loading" :class="loading ? 'opacity-50 cursor-not-allowed' : ''" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
+                                    <span x-show="!loading" class="material-symbols-outlined text-[14px]">add</span>
+                                    <span x-show="loading" class="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                                    <span x-text="loading ? 'Generating...' : 'Generate Set'"></span>
                                 </button>
                             </form>
                         </div>
@@ -303,24 +304,24 @@
                         </div>
 
                         <div class="grid grid-cols-3 gap-2 text-[10px]">
-                            <div>
-                                <span class="text-on-surface-variant/50">Avg rating</span>
-                                <span class="ml-1 font-medium {{ ($tp['avg_rating'] ?? 0) >= 3 ? 'text-primary' : 'text-on-surface-variant/70' }}">{{ number_format($tp['avg_rating'] ?? 0, 1) }}/5</span>
+                            <div class="text-center">
+                                <div class="text-on-surface-variant/50">Avg rating</div>
+                                <div class="font-medium mt-0.5 leading-tight {{ ($tp['avg_rating'] ?? 0) >= 3 ? 'text-primary' : 'text-on-surface-variant/70' }}">{{ number_format($tp['avg_rating'] ?? 0, 1) }}/5</div>
                             </div>
-                            <div>
-                                <span class="text-on-surface-variant/50">Sets</span>
-                                <span class="ml-1 font-medium text-on-surface-variant/70">{{ $tp['set_count'] ?? 0 }}</span>
+                            <div class="text-center">
+                                <div class="text-on-surface-variant/50">Sets</div>
+                                <div class="font-medium text-on-surface-variant/70 mt-0.5 leading-tight">{{ $tp['set_count'] ?? 0 }}</div>
                             </div>
-                            <div>
+                            <div class="text-center">
                                 @if ($isNext)
-                                <span class="text-on-surface-variant/50">Needs</span>
-                                <span class="ml-1 font-medium text-amber-600">{{ $nextUnlock['sets_needed'] }} sets · {{ $nextUnlock['avg_rating_needed'] }} avg</span>
+                                <div class="text-on-surface-variant/50">Needs</div>
+                                <div class="font-medium text-amber-600 mt-0.5 leading-tight">{{ $nextUnlock['sets_needed'] }} sets · {{ $nextUnlock['avg_rating_needed'] }} avg</div>
                                 @elseif (!($tp['unlocked'] ?? false))
-                                <span class="text-on-surface-variant/50">Locked</span>
-                                <span class="ml-1 text-on-surface-variant/40">—</span>
+                                <div class="text-on-surface-variant/50">Locked</div>
+                                <div class="text-on-surface-variant/40 mt-0.5 leading-tight">—</div>
                                 @else
-                                <span class="text-on-surface-variant/50">Status</span>
-                                <span class="ml-1 font-medium text-primary">Ready</span>
+                                <div class="text-on-surface-variant/50">Status</div>
+                                <div class="font-medium text-primary mt-0.5 leading-tight">Ready</div>
                                 @endif
                             </div>
                         </div>

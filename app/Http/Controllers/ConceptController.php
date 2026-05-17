@@ -12,6 +12,7 @@ use App\Services\GroqService;
 use App\Services\ProgressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ConceptController extends Controller
 {
@@ -421,6 +422,7 @@ class ConceptController extends Controller
                 'first_today' => $isFirstToday,
                 'rating_improved' => $ratingImproved ?? false,
                 'milestone_xp' => $milestoneXp,
+                'submitted_set' => $submittedSetNumber,
             ]);
         } catch (\RuntimeException $e) {
             return back()->with('error', 'Failed to evaluate answers: ' . $e->getMessage());
@@ -473,4 +475,16 @@ class ConceptController extends Controller
         return redirect()->route('concepts.show', $concept)->with('success', 'Explanation updated successfully.');
     }
 
+    public function updateStatus(Request $request, Concept $concept)
+    {
+        $this->authorize('update', $concept);
+
+        $data = $request->validate([
+            'status' => ['required', Rule::enum(Status::class)],
+        ]);
+
+        $concept->update(['status' => $data['status']]);
+
+        return back()->with('success', 'Status updated to ' . Status::from($data['status'])->label() . '.');
+    }
 }

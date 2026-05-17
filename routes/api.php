@@ -19,4 +19,4 @@ Route::prefix('groq')->group(function () {
     // List models
     Route::get('/models', [GroqController::class, 'models']);
 
-})->middleware('auth:sanctum');
+})->middleware(['auth:sanctum', 'throttle:60,1']);
