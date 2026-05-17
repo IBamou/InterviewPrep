@@ -41,7 +41,7 @@
                         <span x-text="loading ? 'Generating...' : '{{ $concept->explanation ? 'Improve with AI' : 'Generate with AI' }}'"></span>
                     </button>
                 </div>
-                <div x-show="!showSuggestion">
+                <div x-show="!showSuggestion" x-cloak>
                     @if($concept->explanation)
                         <div class="text-[14px] text-on-surface-variant/80 leading-relaxed">{!! nl2br(e($concept->explanation)) !!}</div>
                     @else
@@ -52,7 +52,7 @@
                         </div>
                     @endif
                 </div>
-                <div x-show="showSuggestion" class="mt-3 bg-primary-fixed/30 border border-primary/20 rounded-lg p-3">
+                <div x-show="showSuggestion" x-cloak class="mt-3 bg-primary-fixed/30 border border-primary/20 rounded-lg p-3">
                     <p class="text-[12px] font-medium text-on-surface-variant/50 mb-1">AI Suggestion:</p>
                     <div class="text-[14px] text-on-surface-variant/80 leading-relaxed mb-3" x-html="suggestion"></div>
                     <div class="flex items-center gap-2">
@@ -115,10 +115,17 @@
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <span class="text-[11px] text-on-surface-variant/50">{{ $evaluatedCount }}/{{ $questions->count() }} evaluated</span>
-                                        <a href="{{ route('concepts.practice', $concept) }}?tier={{ $tier }}&page={{ array_search($setNumber, $tierSets->keys()->toArray()) + 1 }}" class="px-2.5 py-1 bg-primary text-white rounded-lg text-[11px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-[12px]">play_arrow</span>
+                                        @if ($evaluatedCount > 0)
+                                        <a href="{{ route('concepts.practice', $concept) }}?tier={{ $tier }}&page={{ array_search($setNumber, $tierSets->keys()->toArray()) + 1 }}" class="min-w-[82px] justify-center px-2.5 py-1 bg-secondary text-white rounded-lg text-[11px] font-medium hover:bg-secondary/90 transition-all flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">visibility</span>
+                                            Review
+                                        </a>
+                                        @else
+                                        <a href="{{ route('concepts.practice', $concept) }}?tier={{ $tier }}&page={{ array_search($setNumber, $tierSets->keys()->toArray()) + 1 }}" class="min-w-[82px] justify-center px-2.5 py-1 bg-primary text-white rounded-lg text-[11px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
                                             Practice
                                         </a>
+                                        @endif
                                         <span class="material-symbols-outlined text-on-surface-variant/50 group-open/set:rotate-180 transition-transform">expand_more</span>
                                     </div>
                                 </summary>

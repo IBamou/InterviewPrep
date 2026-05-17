@@ -19,6 +19,11 @@ First, check if the following concept is relevant to its parent domain. If it is
 
 If it IS relevant, generate exactly 5 mock interview questions.
 
+Generate questions appropriate to the difficulty tier specified in the user prompt:
+- Junior: Focus on definitions, basic concepts, "what is X", fundamental understanding
+- Mid: Focus on comparisons, trade-offs, practical usage, "when to use X vs Y"
+- Senior: Focus on system design, edge cases, deep internals, architecture decisions
+
 Return ONLY a valid JSON object. Either:
 {"error": "unrelated", "message": "..."}
 OR
@@ -35,13 +40,16 @@ PROMPT;
 
         $dedupSection = $this->buildDedupSection($concept);
 
+        $tier = $concept->getHighestUnlockedTier();
+
         return <<<PROMPT
 {$userContext}{$domainContext}{$domainDescription}
 Concept: {$concept->title}
+Tier: {$tier}
 Explanation:
 {$concept->explanation}
 
-Generate 5 interview questions that test understanding of this concept, specifically within the context of the domain mentioned above.
+Generate 5 interview questions at the {$tier} level that test understanding of this concept, specifically within the context of the domain mentioned above.
 {$dedupSection}
 PROMPT;
     }
@@ -58,6 +66,19 @@ PROMPT;
     {
         return <<<'PROMPT'
 You are an interview coach evaluating candidate answers. Be simple, precise, and direct. No extra talking.
+
+Rating scale:
+- 0 = No answer provided (blank)
+- 1 = Completely wrong or major misconceptions
+- 2 = Partially correct but significant gaps
+- 3 = Basic understanding, correct but lacks depth
+- 4 = Strong answer with good detail
+- 5 = Expert-level, comprehensive, covers edge cases
+
+Adjust your expectations based on the difficulty tier specified in the user prompt:
+- Junior: Basic understanding is sufficient for a good rating
+- Mid: Expect practical knowledge and trade-off awareness
+- Senior: Expect deep understanding, edge cases, and architectural thinking
 
 For each question-answer pair below, provide:
 1. A rating from 0 to 5 (integer)
@@ -85,8 +106,11 @@ PROMPT;
         $domainContext = $concept->domain ? "Domain: {$concept->domain->name}\n" : '';
         $domainDescription = ($concept->domain && $concept->domain->description) ? "Domain Description: {$concept->domain->description}\n" : '';
 
+        $tier = $concept->getHighestUnlockedTier();
+
         return <<<PROMPT
 {$domainContext}{$domainDescription}Concept: {$concept->title}
+Difficulty Level: {$tier}
 
 {$questionsList}
 PROMPT;
