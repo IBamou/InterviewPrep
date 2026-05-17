@@ -4,33 +4,19 @@ namespace App\Services;
 
 use App\Enums\Status;
 use App\Models\Concept;
+use App\Models\GeneratedQuestion;
 
 class ProgressionService
 {
-    protected const MID_UNLOCK_XP = 500;
-    protected const SENIOR_UNLOCK_XP = 1000;
-    protected const MIN_PRACTICE_SETS = 5;
-    protected const MIN_AVG_RATING = 3.0;
-    protected const MASTERED_AVG_RATING = 3.5;
-    protected const MASTERED_SENIOR_XP = 300;
-
-    protected const XP_PER_RATING = [
-        0 => 0,
-        1 => -10,
-        2 => -5,
-        3 => 5,
-        4 => 10,
-        5 => 20,
-    ];
-
     public function calculateXpForRating(int $rating): int
     {
-        return self::XP_PER_RATING[$rating] ?? 0;
+        $map = config('gamification.xp_per_rating');
+        return $map[$rating] ?? 0;
     }
 
     public function awardXp(Concept $concept, int $xp, string $tier): Concept
     {
-        $tierXp = $concept->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
+        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
         $tierXp[$tier] = ($tierXp[$tier] ?? 0) + $xp;
         $concept->update(['tier_xp' => $tierXp]);
 
@@ -55,20 +41,22 @@ class ProgressionService
     public function checkTierUnlocks(Concept $concept): Concept
     {
         $tiers = $concept->unlocked_tiers ?? ['junior'];
-        $tierXp = $concept->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
+        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
         $totalXp = array_sum($tierXp);
         $setsCompleted = $concept->practice_sets_completed;
         $globalAvg = $concept->getGlobalAvgRating();
 
-        $meetsRequirements = $setsCompleted >= self::MIN_PRACTICE_SETS && $globalAvg >= self::MIN_AVG_RATING;
+        $minSets = config('gamification.min_practice_sets');
+        $minAvg = config('gamification.min_avg_rating');
+        $meetsRequirements = $setsCompleted >= $minSets && $globalAvg >= $minAvg;
 
-        if ($meetsRequirements && $totalXp >= self::SENIOR_UNLOCK_XP && !in_array('senior', $tiers)) {
+        if ($meetsRequirements && $totalXp >= config('gamification.senior_unlock_xp') && !in_array('senior', $tiers)) {
             $tiers[] = 'senior';
             $concept->update([
                 'unlocked_tiers' => $tiers,
                 'practice_sets_completed' => 0,
             ]);
-        } elseif ($meetsRequirements && $totalXp >= self::MID_UNLOCK_XP && !in_array('mid', $tiers)) {
+        } elseif ($meetsRequirements && $totalXp >= config('gamification.mid_unlock_xp') && !in_array('mid', $tiers)) {
             $tiers[] = 'mid';
             $concept->update([
                 'unlocked_tiers' => $tiers,
@@ -95,10 +83,13 @@ class ProgressionService
             && in_array('mid', $concept->unlocked_tiers ?? [])
             && in_array('senior', $concept->unlocked_tiers ?? []);
 
-        $tierXp = $concept->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
+        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
         $seniorXp = $tierXp['senior'] ?? 0;
 
-        if ($globalAvg >= self::MASTERED_AVG_RATING && $allTiersUnlocked && $seniorXp >= self::MASTERED_SENIOR_XP) {
+        $masteredAvg = config('gamification.mastered_avg_rating');
+        $masteredSeniorXp = config('gamification.mastered_senior_xp');
+
+        if ($globalAvg >= $masteredAvg && $allTiersUnlocked && $seniorXp >= $masteredSeniorXp) {
             $concept->update(['status' => Status::Mastered]);
         }
 
@@ -107,16 +98,30 @@ class ProgressionService
 
     public function calculateMasteryScore(Concept $concept): float
     {
-        $evaluated = $concept->generatedQuestions()->whereNotNull('rating')->get();
+        $sessions = $concept->practice_sessions ?? [];
 
-        if ($evaluated->isEmpty()) {
+        if (empty($sessions)) {
             return 0;
         }
 
-        $totalPossible = $evaluated->count() * 5;
-        $totalEarned = $evaluated->sum('rating');
+        $weights = config('gamification.mastery_weights');
+        $recentSessions = collect($sessions)->sortByDesc('date')->values();
+        $weightedSum = 0;
+        $totalWeight = 0;
 
-        return round(($totalEarned / $totalPossible) * 100, 2);
+        foreach ($recentSessions as $i => $session) {
+            $weight = match (true) {
+                $i < $weights['recent_count'] => $weights['recent_weight'],
+                $i < $weights['normal_count'] => $weights['normal_weight'],
+                default => $weights['stale_weight'],
+            };
+            $weightedSum += ($session['avg_rating'] ?? 0) * $weight;
+            $totalWeight += $weight;
+        }
+
+        $weightedAvg = $totalWeight > 0 ? $weightedSum / $totalWeight : 0;
+
+        return round(($weightedAvg / 5) * 100, 2);
     }
 
     public function getMasteryTier(float $score): array
@@ -141,7 +146,7 @@ class ProgressionService
     public function getNextUnlockThreshold(Concept $concept): ?array
     {
         $tiers = $concept->unlocked_tiers ?? ['junior'];
-        $tierXp = $concept->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
+        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
         $totalXp = array_sum($tierXp);
         $setsCompleted = $concept->practice_sets_completed;
         $globalAvg = $concept->getGlobalAvgRating();
@@ -149,11 +154,11 @@ class ProgressionService
         if (!in_array('mid', $tiers)) {
             return [
                 'tier' => 'mid',
-                'xp_needed' => self::MID_UNLOCK_XP,
+                'xp_needed' => config('gamification.mid_unlock_xp'),
                 'current_xp' => $totalXp,
-                'sets_needed' => self::MIN_PRACTICE_SETS,
+                'sets_needed' => config('gamification.min_practice_sets'),
                 'sets_completed' => $setsCompleted,
-                'avg_rating_needed' => self::MIN_AVG_RATING,
+                'avg_rating_needed' => config('gamification.min_avg_rating'),
                 'current_avg_rating' => $globalAvg,
             ];
         }
@@ -161,11 +166,11 @@ class ProgressionService
         if (!in_array('senior', $tiers)) {
             return [
                 'tier' => 'senior',
-                'xp_needed' => self::SENIOR_UNLOCK_XP,
+                'xp_needed' => config('gamification.senior_unlock_xp'),
                 'current_xp' => $totalXp,
-                'sets_needed' => self::MIN_PRACTICE_SETS,
+                'sets_needed' => config('gamification.min_practice_sets'),
                 'sets_completed' => $setsCompleted,
-                'avg_rating_needed' => self::MIN_AVG_RATING,
+                'avg_rating_needed' => config('gamification.min_avg_rating'),
                 'current_avg_rating' => $globalAvg,
             ];
         }
@@ -175,28 +180,159 @@ class ProgressionService
 
     public function getMasteryProgress(Concept $concept): array
     {
-        $tierXp = $concept->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
+        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
         $allTiersUnlocked = in_array('junior', $concept->unlocked_tiers ?? ['junior'])
             && in_array('mid', $concept->unlocked_tiers ?? [])
             && in_array('senior', $concept->unlocked_tiers ?? []);
 
         $globalAvg = $concept->getGlobalAvgRating();
         $tierAverages = [];
-        foreach (['junior', 'mid', 'senior'] as $t) {
+        foreach (config('gamification.tiers') as $t) {
             $tierAverages[$t] = $concept->getTierAvgRating($t);
         }
 
         $seniorXp = $tierXp['senior'] ?? 0;
+        $masteredSeniorXp = config('gamification.mastered_senior_xp');
 
         return [
-            'avg_rating_met' => $globalAvg >= self::MASTERED_AVG_RATING,
+            'avg_rating_met' => $globalAvg >= config('gamification.mastered_avg_rating'),
             'global_avg_rating' => $globalAvg,
             'tier_averages' => $tierAverages,
             'all_tiers_unlocked' => $allTiersUnlocked,
-            'senior_xp_met' => $seniorXp >= self::MASTERED_SENIOR_XP,
+            'senior_xp_met' => $seniorXp >= $masteredSeniorXp,
             'senior_xp' => $seniorXp,
-            'senior_xp_needed' => self::MASTERED_SENIOR_XP,
+            'senior_xp_needed' => $masteredSeniorXp,
             'tier_xp' => $tierXp,
         ];
+    }
+
+    public function updateStreak(Concept $concept): Concept
+    {
+        $streak = $concept->practice_streak ?? ['current' => 0, 'longest' => 0, 'last_practice' => null];
+        $today = now()->toDateString();
+
+        if ($streak['last_practice'] === $today) {
+            return $concept;
+        }
+
+        $yesterday = now()->subDay()->toDateString();
+
+        if ($streak['last_practice'] === $yesterday) {
+            $streak['current']++;
+        } else {
+            $streak['current'] = 1;
+        }
+
+        $streak['longest'] = max($streak['longest'], $streak['current']);
+        $streak['last_practice'] = $today;
+
+        $concept->update(['practice_streak' => $streak]);
+
+        return $concept;
+    }
+
+    public function getStreakBonus(Concept $concept): int
+    {
+        $streak = $concept->practice_streak ?? ['current' => 0];
+        $days = $streak['current'] ?? 0;
+
+        if ($days >= 7) return config('gamification.streak_bonus_veteran');
+        if ($days >= 2) return config('gamification.streak_bonus_active');
+        return 0;
+    }
+
+    public function isFirstPracticeToday(Concept $concept): bool
+    {
+        $sessions = $concept->practice_sessions ?? [];
+        $today = now()->toDateString();
+
+        foreach ($sessions as $session) {
+            if (($session['date'] ?? null) === $today) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function isPerfectSet(array $evaluations): bool
+    {
+        if (empty($evaluations)) {
+            return false;
+        }
+
+        foreach ($evaluations as $eval) {
+            if (($eval['rating'] ?? 0) < 4) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function isFirstSetEver(Concept $concept): bool
+    {
+        return empty($concept->practice_sessions);
+    }
+
+    public function hasRatingImproved(Concept $concept, string $tier, int $setNumber, array $evaluations): bool
+    {
+        $existing = GeneratedQuestion::where('concept_id', $concept->id)
+            ->where('tier', $tier)
+            ->where('set_number', $setNumber)
+            ->whereNotNull('rating')
+            ->get();
+
+        if ($existing->isEmpty()) {
+            return false;
+        }
+
+        $oldAvg = (float) $existing->avg('rating');
+        $newRatings = collect($evaluations)->pluck('rating')->filter(function ($r) {
+            return $r !== null;
+        });
+
+        if ($newRatings->isEmpty()) {
+            return false;
+        }
+
+        $newAvg = $newRatings->avg();
+
+        return $newAvg >= $oldAvg + 1.0;
+    }
+
+    public function checkStreakMilestone(Concept $concept): int
+    {
+        $streak = $concept->practice_streak ?? ['current' => 0];
+        $days = $streak['current'] ?? 0;
+        $milestones = $concept->streak_milestones ?? [];
+
+        if ($days >= 30 && !in_array(30, $milestones, true)) {
+            $milestones[] = 30;
+            $concept->update(['streak_milestones' => $milestones]);
+            return config('gamification.bonus_streak_milestone_30');
+        }
+
+        if ($days >= 7 && !in_array(7, $milestones, true)) {
+            $milestones[] = 7;
+            $concept->update(['streak_milestones' => $milestones]);
+            return config('gamification.bonus_streak_milestone_7');
+        }
+
+        return 0;
+    }
+
+    public function awardExplanationXp(Concept $concept): Concept
+    {
+        $xp = config('gamification.bonus_explanation');
+        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
+        $tierXp['junior'] = ($tierXp['junior'] ?? 0) + $xp;
+        $concept->update(['tier_xp' => $tierXp]);
+
+        $totalXp = array_sum($tierXp);
+        $concept->update(['xp' => $totalXp]);
+        $concept->refresh();
+
+        return $concept;
     }
 }

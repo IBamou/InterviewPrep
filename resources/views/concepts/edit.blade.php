@@ -2,7 +2,7 @@
     <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
         <a class="hover:text-primary transition-colors" href="{{ route('domains.index') }}">Domains</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $concept->domain) }}">{{ $concept->domain->name }}</a>
+        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $concept->domain) }}">{{ $concept->domain?->name ?? 'Unknown' }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <a class="hover:text-primary transition-colors" href="{{ route('concepts.show', $concept) }}">{{ $concept->title }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -31,7 +31,7 @@
                     <div>
                         <label class="text-[13px] font-medium text-on-surface mb-1.5 block">Domain</label>
                         <div class="w-full h-9 px-3 rounded-lg border border-outline-variant/30 bg-surface-container/50 text-[13px] text-on-surface-variant/60 flex items-center">
-                            {{ $concept->domain->name }}
+{{ $concept->domain?->name ?? 'Unknown' }}
                         </div>
                     </div>
                 </div>

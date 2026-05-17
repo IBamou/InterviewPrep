@@ -69,7 +69,7 @@
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-[14px] font-medium text-on-surface">{{ $concept->title }}</span>
                                 <span class="text-[11px] text-on-surface-variant/40">in</span>
-                                <span class="text-[12px] text-primary font-medium">{{ $concept->domain->name }}</span>
+                                <span class="text-[12px] text-primary font-medium">{{ $concept->domain?->name ?? 'Unknown' }}</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-medium {{ $concept->status->value === 'to_review' ? 'bg-error/5 text-error' : ($concept->status->value === 'mastered' ? 'bg-secondary/10 text-secondary' : 'bg-amber-50 text-amber-600') }}">
@@ -100,9 +100,9 @@
                         <div class="flex-1 min-w-0">
                             <p class="text-[13px] font-medium text-on-surface mb-1">{{ $question->question }}</p>
                             <div class="flex items-center gap-2 text-[11px] text-on-surface-variant/50">
-                                <span>{{ $question->concept->title }}</span>
+                                <span>{{ $question->concept?->title ?? 'Unknown' }}</span>
                                 <span>·</span>
-                                <span>{{ $question->concept->domain->name }}</span>
+                                <span>{{ $question->concept?->domain?->name ?? 'Unknown' }}</span>
                                 @if ($question->rating)
                                 <span>·</span>
                                 <span class="flex items-center gap-0.5">

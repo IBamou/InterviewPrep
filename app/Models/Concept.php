@@ -13,7 +13,7 @@ class Concept extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['domain_id', 'title', 'explanation', 'status', 'xp', 'unlocked_tiers', 'mastery_score', 'practice_sessions', 'practice_sets_completed', 'total_rating_sum', 'tier_xp', 'tier_ratings'];
+    protected $fillable = ['domain_id', 'title', 'explanation', 'status', 'xp', 'unlocked_tiers', 'mastery_score', 'practice_sessions', 'practice_sets_completed', 'total_rating_sum', 'tier_xp', 'tier_ratings', 'practice_streak', 'streak_milestones'];
 
     public function setTitleAttribute($value): void
     {
@@ -30,32 +30,26 @@ class Concept extends Model
         'total_rating_sum' => 'decimal:2',
         'tier_xp' => 'array',
         'tier_ratings' => 'array',
+        'practice_streak' => 'array',
+        'streak_milestones' => 'array',
     ];
 
     public function getTierXp(string $tier): int
     {
-        $tierXp = $this->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
+        $tierXp = $this->tier_xp ?? config('gamification.default_tier_xp');
         return $tierXp[$tier] ?? 0;
     }
 
     public function getTierAvgRating(string $tier): float
     {
-        $tierRatings = $this->tier_ratings ?? [
-            'junior' => ['sum' => 0, 'count' => 0],
-            'mid' => ['sum' => 0, 'count' => 0],
-            'senior' => ['sum' => 0, 'count' => 0],
-        ];
+        $tierRatings = $this->tier_ratings ?? config('gamification.default_tier_ratings');
         $data = $tierRatings[$tier] ?? ['sum' => 0, 'count' => 0];
         return $data['count'] > 0 ? round($data['sum'] / $data['count'], 1) : 0;
     }
 
     public function getGlobalAvgRating(): float
     {
-        $tierRatings = $this->tier_ratings ?? [
-            'junior' => ['sum' => 0, 'count' => 0],
-            'mid' => ['sum' => 0, 'count' => 0],
-            'senior' => ['sum' => 0, 'count' => 0],
-        ];
+        $tierRatings = $this->tier_ratings ?? config('gamification.default_tier_ratings');
         $totalSum = 0;
         $totalCount = 0;
         foreach ($tierRatings as $data) {

@@ -7,7 +7,7 @@
     <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
         <a class="hover:text-primary transition-colors" href="{{ route('domains.index') }}">Domains</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $concept->domain) }}">{{ $concept->domain->name }}</a>
+        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $concept->domain) }}">{{ $concept->domain?->name ?? 'Unknown Domain' }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <a class="hover:text-primary transition-colors" href="{{ route('concepts.show', $concept) }}">{{ $concept->title }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -17,19 +17,33 @@
     @if (session()->has('xp_earned'))
     @php
         $xpEarned = session('xp_earned');
-        $xpColor = $xpEarned > 0 ? 'text-primary' : ($xpEarned < 0 ? 'text-error' : 'text-amber-600');
-        $xpBg = $xpEarned > 0 ? 'bg-primary/5 border-primary/20' : ($xpEarned < 0 ? 'bg-error/5 border-error/20' : 'bg-amber-50 border-amber-200');
-        $xpIcon = $xpEarned > 0 ? 'trending_up' : ($xpEarned < 0 ? 'trending_down' : 'warning');
+        $streakData = session('streak');
+        $streakDays = $streakData['current'] ?? 0;
     @endphp
-    <div class="mb-4 p-3 {{ $xpBg }} border rounded-xl">
+    <div class="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-xl">
         <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined {{ $xpColor }} text-[20px]" style="font-variation-settings: 'FILL' 1;">{{ $xpIcon }}</span>
-            <div>
-                <p class="text-[13px] font-semibold {{ $xpColor }}">{{ $xpEarned >= 0 ? '+' : '' }}{{ $xpEarned }} XP</p>
-                @if ($xpEarned === 0)
-                <p class="text-[11px] text-error/70 mt-0.5">Blank answers count as 0/5 and lower your average rating</p>
+            <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+            <div class="flex-1">
+                <p class="text-[13px] font-semibold text-primary">+{{ $xpEarned }} XP earned</p>
+                @if (session('bonus_xp') && session('bonus_xp') > 0)
+                <p class="text-[11px] text-secondary/80 mt-0.5">Includes +{{ session('bonus_xp') }} bonus XP</p>
                 @endif
-                <p class="text-[11px] text-on-surface-variant/60">Global avg: {{ $concept->getGlobalAvgRating() }}/5 · {{ ucfirst($tier) }} avg: {{ $concept->getTierAvgRating($tier) }}/5</p>
+                @if ($streakDays > 1)
+                <p class="text-[11px] text-amber-600 mt-0.5">🔥 {{ $streakDays }}-day streak</p>
+                @endif
+                @if (session('first_today'))
+                <p class="text-[11px] text-secondary mt-0.5">🏆 First practice today! +15 bonus</p>
+                @endif
+                @if (session('is_perfect'))
+                <p class="text-[11px] text-primary mt-0.5">⭐ Perfect set! All questions rated 4+ (+25 bonus)</p>
+                @endif
+                @if (session('rating_improved'))
+                <p class="text-[11px] text-cyan-600 mt-0.5">📈 Rating improved! +15 bonus</p>
+                @endif
+                @if (session('milestone_xp') && session('milestone_xp') > 0)
+                <p class="text-[11px] text-amber-700 mt-0.5">🏅 Streak milestone! +{{ session('milestone_xp') }} bonus</p>
+                @endif
+                <p class="text-[11px] text-on-surface-variant/60 mt-0.5">Global avg: {{ $concept->getGlobalAvgRating() }}/5 · {{ ucfirst($tier) }} avg: {{ $concept->getTierAvgRating($tier) }}/5</p>
                 @if (session('next_unlock'))
                 @php $next = session('next_unlock'); @endphp
                 <p class="text-[10px] text-primary/70 mt-0.5">
@@ -56,12 +70,21 @@
     </div>
 
     @php
-        $tierColors = [
-            'junior' => ['bg' => 'bg-primary/10', 'text' => 'text-primary', 'border' => 'border-primary', 'activeBg' => 'bg-primary', 'activeText' => 'text-white'],
-            'mid' => ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'border' => 'border-secondary', 'activeBg' => 'bg-secondary', 'activeText' => 'text-white'],
-            'senior' => ['bg' => 'bg-tertiary/10', 'text' => 'text-tertiary', 'border' => 'border-tertiary', 'activeBg' => 'bg-tertiary', 'activeText' => 'text-white'],
-        ];
+        $tierColors = config('gamification.tier_colors');
+        $isFirstEver = empty($concept->practice_sessions);
     @endphp
+
+    @if ($isFirstEver && $currentSet && $currentSet->isNotEmpty() && $currentSet->contains(fn($q) => $q->rating === null))
+    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+        <div class="flex items-center gap-3">
+            <span class="text-[18px]">🚀</span>
+            <div class="flex-1">
+                <p class="text-[13px] font-semibold text-amber-800">First practice session!</p>
+                <p class="text-[11px] text-amber-700/70">Answer the questions below, then submit for AI evaluation. You'll get a rating, feedback, and a model answer for each question. Every attempt earns XP!</p>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <div class="flex items-center gap-2 mb-4">
         @foreach ($allTiers as $t)
@@ -153,10 +176,9 @@
                                             </div>
                                             <span class="text-[11px] font-medium text-on-surface-variant/60">{{ $q->rating }}/5</span>
                                             @php
-                                                $xpMap = [0 => 0, 1 => -10, 2 => -5, 3 => 5, 4 => 10, 5 => 20];
-                                                $qXp = $xpMap[$q->rating] ?? 0;
+                                                $qXp = config('gamification.xp_per_rating')[$q->rating] ?? 0;
                                             @endphp
-                                            <span class="text-[11px] font-semibold {{ $qXp < 0 ? 'text-error' : 'text-primary' }}">{{ $qXp >= 0 ? '+' : '' }}{{ $qXp }} XP</span>
+                                            <span class="text-[11px] font-semibold text-primary">+{{ $qXp }} XP</span>
                                         </div>
 
                                         @if ($q->answer)
@@ -196,7 +218,7 @@
                                 <span class="material-symbols-outlined text-[14px]">rate_review</span>
                                 Submit All for AI Review
                             </button>
-                            <p class="text-[11px] text-on-surface-variant/40">Leave blank if you don't know — you'll get the answer to learn (0/5, +0 XP)</p>
+                            <p class="text-[11px] text-on-surface-variant/40">Leave blank if you don't know — you'll get the model answer to learn (min +2 XP)</p>
                         </div>
                         @endif
                     </div>
