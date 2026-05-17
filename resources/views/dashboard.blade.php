@@ -8,6 +8,12 @@
             <h2 class="font-display-lg text-display-lg text-on-surface">Welcome back, {{ Auth::user()->name }}</h2>
             <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Track your technical interview preparation</p>
         </div>
+        @if ($longestStreak > 1)
+        <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
+            <span class="text-[16px]">🔥</span>
+            <span class="text-[13px] font-semibold text-amber-700">{{ $longestStreak }}-day best streak</span>
+        </div>
+        @endif
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -69,7 +75,7 @@
                             <div>
                                 <div class="text-[13px] font-medium text-on-surface">{{ $concept->title }}</div>
                                 <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] text-on-surface-variant/60">{{ $concept->domain->name }}</span>
+                                    <span class="text-[10px] text-on-surface-variant/60">{{ $concept->domain?->name ?? 'Deleted Domain' }}</span>
                                     <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
                                     <span class="text-[10px] text-error font-medium">To Review</span>
                                 </div>
@@ -102,7 +108,7 @@
                             <div>
                                 <div class="text-[13px] font-medium text-on-surface">{{ $concept->title }}</div>
                                 <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] text-on-surface-variant/60">{{ $concept->domain->name }}</span>
+                                    <span class="text-[10px] text-on-surface-variant/60">{{ $concept->domain?->name ?? 'Deleted Domain' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -134,6 +140,15 @@
         </div>
 
         <div class="space-y-5">
+            <section class="bg-white border border-outline-variant/50 rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="material-symbols-outlined text-[20px] {{ $todayPracticed ? 'text-secondary' : 'text-on-surface-variant/30' }}" style="font-variation-settings: 'FILL' 1;">{{ $todayPracticed ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                    <div>
+                        <p class="text-[13px] font-medium {{ $todayPracticed ? 'text-secondary' : 'text-on-surface-variant/60' }}">{{ $todayPracticed ? 'Today\'s practice done' : 'Practice today' }}</p>
+                        <p class="text-[11px] text-on-surface-variant/40">{{ $todayPracticed ? 'Daily goal completed' : 'Complete 1 set to earn +15 bonus' }}</p>
+                    </div>
+                </div>
+            </section>
             <section class="bg-white border border-outline-variant/50 rounded-xl p-4">
                 <h3 class="text-[14px] font-semibold text-on-surface mb-3">Quick Actions</h3>
                 <div class="space-y-2">

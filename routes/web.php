@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ConceptController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
@@ -12,44 +13,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    $user = Auth::user();
-
-    $domains = $user->domains()
-        ->withCount('concepts')
-        ->withCount(['concepts as mastered_count' => function ($query) {
-            $query->where('status', 'mastered');
-        }])
-        ->withCount(['concepts as in_progress_count' => function ($query) {
-            $query->where('status', 'in_progress');
-        }])
-        ->withCount(['concepts as to_review_count' => function ($query) {
-            $query->where('status', 'to_review');
-        }])
-        ->get();
-
-    $totalConcepts = $domains->sum('concepts_count');
-    $totalMastered = $domains->sum('mastered_count');
-    $masteryRate = $totalConcepts > 0 ? round(($totalMastered / $totalConcepts) * 100) : 0;
-
-    $topDomain = $domains->sortByDesc(fn($d) => $d->concepts_count > 0 ? $d->mastered_count / $d->concepts_count : 0)->first();
-
-    $reviewConcepts = \App\Models\Concept::whereIn('domain_id', $user->domains()->pluck('id'))
-        ->where('status', 'to_review')
-        ->with('domain')
-        ->latest('updated_at')
-        ->take(3)
-        ->get();
-
-    $staleConcepts = \App\Models\Concept::whereIn('domain_id', $user->domains()->pluck('id'))
-        ->where('updated_at', '<', now()->subDays(30))
-        ->with('domain')
-        ->latest('updated_at')
-        ->take(5)
-        ->get();
-
-    return view('dashboard', compact('domains', 'totalConcepts', 'totalMastered', 'masteryRate', 'topDomain', 'reviewConcepts', 'staleConcepts'));
-})->middleware(['auth', 'verified', 'onboarding'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'onboarding'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');

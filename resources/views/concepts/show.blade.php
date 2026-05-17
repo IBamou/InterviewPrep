@@ -11,7 +11,7 @@
     <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
         <a class="hover:text-primary transition-colors" href="{{ route('domains.index') }}">Domains</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $concept->domain) }}">{{ $concept->domain->name }}</a>
+        <a class="hover:text-primary transition-colors" href="{{ route('domains.show', $concept->domain) }}">{{ $concept->domain?->name ?? 'Domain' }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <span class="text-on-surface font-medium">{{ $concept->title }}</span>
     </nav>
@@ -76,11 +76,7 @@
             @php
                 $isUnlocked = $concept->hasTierUnlocked($tier);
                 $tierSets = $tierData[$tier] ?? collect();
-                $tierColors = [
-                    'junior' => ['bg' => 'bg-primary/10', 'text' => 'text-primary', 'border' => 'border-primary/20'],
-                    'mid' => ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'border' => 'border-secondary/20'],
-                    'senior' => ['bg' => 'bg-tertiary/10', 'text' => 'text-tertiary', 'border' => 'border-tertiary/20'],
-                ];
+                $tierColors = config('gamification.tier_colors');
                 $colors = $tierColors[$tier];
             @endphp
             <section class="bg-white border {{ $isUnlocked ? $colors['border'] : 'border-outline-variant/30' }} rounded-xl overflow-hidden">
@@ -149,10 +145,9 @@
                                                     </div>
                                                     <span class="text-[11px] font-medium text-on-surface-variant/60">{{ $q->rating }}/5</span>
                                                     @php
-                                                        $xpMap = [0 => 0, 1 => -10, 2 => -5, 3 => 5, 4 => 10, 5 => 20];
-                                                        $qXp = $xpMap[$q->rating] ?? 0;
+                                                        $qXp = config('gamification.xp_per_rating')[$q->rating] ?? 0;
                                                     @endphp
-                                                    <span class="text-[11px] font-semibold {{ $qXp < 0 ? 'text-error' : 'text-primary' }}">{{ $qXp >= 0 ? '+' : '' }}{{ $qXp }} XP</span>
+                                                    <span class="text-[11px] font-semibold text-primary">+{{ $qXp }} XP</span>
                                                 </div>
 
                                                 @if ($q->answer)
@@ -214,28 +209,48 @@
                     <div class="flex items-center gap-1.5 mb-2">
                         <span class="material-symbols-outlined text-white/70 text-[16px]">auto_awesome</span>
                         <span class="text-[10px] font-semibold text-white/60 uppercase">Practice</span>
+                        @php
+                            $streakData = $concept->practice_streak ?? ['current' => 0];
+                            $streakDays = $streakData['current'] ?? 0;
+                        @endphp
+                        @if ($streakDays > 1)
+                        <span class="ml-auto text-[11px] text-amber-300 font-semibold">🔥 {{ $streakDays }}</span>
+                        @endif
                     </div>
                     <h4 class="text-[13px] font-semibold mb-1">Start Practicing</h4>
                     <p class="text-[12px] text-white/70 mb-3">Answer questions and get AI feedback on your responses.</p>
+                    @if ($isFirstSetEver && $concept->generatedQuestions->isEmpty())
+                    <p class="text-[11px] text-amber-200 mb-2">🚀 Generate your first set to begin!</p>
+                    @endif
                     <a href="{{ route('concepts.practice', $concept) }}?tier=junior" class="block w-full bg-white text-primary px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-white/90 transition-all text-center">
                         Go to Practice
                     </a>
                 </div>
             </div>
 
-            @php $progression = app(\App\Services\ProgressionService::class); @endphp
+            @php
+                $todaySessions = collect($concept->practice_sessions ?? [])->filter(fn($s) => ($s['date'] ?? null) === now()->toDateString());
+                $dailyGoalMet = $todaySessions->isNotEmpty();
+            @endphp
+            <div class="bg-white border border-outline-variant/50 rounded-xl p-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-[20px] {{ $dailyGoalMet ? 'text-secondary' : 'text-on-surface-variant/30' }}" style="font-variation-settings: 'FILL' 1;">{{ $dailyGoalMet ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                    <div>
+                        <p class="text-[12px] font-medium {{ $dailyGoalMet ? 'text-secondary' : 'text-on-surface-variant/60' }}">{{ $dailyGoalMet ? 'Daily goal completed' : 'Practice 1 set today' }}</p>
+                        <p class="text-[10px] text-on-surface-variant/40">Practice at least one set per day</p>
+                    </div>
+                </div>
+            </div>
+
+
             <div class="bg-white border border-outline-variant/50 rounded-xl p-4">
                 <h4 class="text-[13px] font-semibold text-on-surface mb-3">Progress</h4>
                 <div class="space-y-3">
                     @php
-                        $tierXp = $concept->tier_xp ?? ['junior' => 0, 'mid' => 0, 'senior' => 0];
-                        $tierColors = [
-                            'junior' => ['bg' => 'bg-primary/10', 'text' => 'text-primary', 'bar' => 'bg-primary'],
-                            'mid' => ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'bar' => 'bg-secondary'],
-                            'senior' => ['bg' => 'bg-tertiary/10', 'text' => 'text-tertiary', 'bar' => 'bg-tertiary'],
-                        ];
+                        $tierXp = $concept->tier_xp ?? config('gamification.default_tier_xp');
+                        $tierColors = config('gamification.tier_colors');
                     @endphp
-                    @foreach (['junior', 'mid', 'senior'] as $t)
+                    @foreach (config('gamification.tiers') as $t)
                     @php $colors = $tierColors[$t]; @endphp
                     <div>
                         <div class="flex items-center justify-between mb-1">
@@ -250,39 +265,71 @@
                 </div>
             </div>
 
-            @php $nextUnlock = $progression->getNextUnlockThreshold($concept); @endphp
-            @if ($nextUnlock)
+            @php
+                $tierColors = config('gamification.tier_colors');
+                $allTiers = config('gamification.tiers');
+            @endphp
             <div class="bg-white border border-outline-variant/50 rounded-xl p-4">
-                <h4 class="text-[13px] font-semibold text-on-surface mb-3">Next Unlock</h4>
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[12px] font-medium text-secondary">{{ ucfirst($nextUnlock['tier']) }}</span>
+                <h4 class="text-[13px] font-semibold text-on-surface mb-3">Tier Progress</h4>
+                <div class="space-y-4">
+                    @foreach ($allTiers as $t)
+                    @php
+                        $tp = $tierProgress[$t] ?? [];
+                        $colors = $tierColors[$t];
+                        $isNext = $nextUnlock && $nextUnlock['tier'] === $t;
+                    @endphp
+                    <div class="{{ !$loop->last ? 'pb-3 border-b border-outline-variant/20' : '' }}">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-1.5">
+                                @if ($tp['unlocked'] ?? false)
+                                <span class="material-symbols-outlined {{ $colors['text'] }} text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                @elseif ($isNext)
+                                <span class="material-symbols-outlined text-amber-600 text-[14px]" style="font-variation-settings: 'FILL' 1;">lock_open</span>
+                                @else
+                                <span class="material-symbols-outlined text-on-surface-variant/30 text-[14px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                                @endif
+                                <span class="text-[12px] font-semibold {{ $tp['unlocked'] ?? false ? $colors['text'] : 'text-on-surface-variant/60' }}">{{ ucfirst($t) }}</span>
+                                @if ($tp['unlocked'] ?? false)
+                                <span class="text-[10px] text-primary font-medium">Unlocked</span>
+                                @elseif ($isNext)
+                                <span class="text-[10px] text-amber-600 font-medium">Next</span>
+                                @endif
+                            </div>
+                            <span class="text-[11px] {{ $tp['unlocked'] ?? false ? 'text-on-surface-variant/60' : 'text-on-surface-variant/40' }}">{{ $tp['xp'] ?? 0 }} XP</span>
+                        </div>
+
+                        <div class="w-full bg-surface-container h-1.5 rounded-full mb-2">
+                            <div class="{{ $colors['bar'] }} h-full rounded-full transition-all" style="width: {{ min(100, round((($tp['xp'] ?? 0) / max(($tp['xp_target'] ?? 200), 1)) * 100)) }}%"></div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-[10px]">
+                            <div>
+                                <span class="text-on-surface-variant/50">Avg rating</span>
+                                <span class="ml-1 font-medium {{ ($tp['avg_rating'] ?? 0) >= 3 ? 'text-primary' : 'text-on-surface-variant/70' }}">{{ number_format($tp['avg_rating'] ?? 0, 1) }}/5</span>
+                            </div>
+                            <div>
+                                <span class="text-on-surface-variant/50">Sets</span>
+                                <span class="ml-1 font-medium text-on-surface-variant/70">{{ $tp['set_count'] ?? 0 }}</span>
+                            </div>
+                            <div>
+                                @if ($isNext)
+                                <span class="text-on-surface-variant/50">Needs</span>
+                                <span class="ml-1 font-medium text-amber-600">{{ $nextUnlock['sets_needed'] }} sets · {{ $nextUnlock['avg_rating_needed'] }} avg</span>
+                                @elseif (!($tp['unlocked'] ?? false))
+                                <span class="text-on-surface-variant/50">Locked</span>
+                                <span class="ml-1 text-on-surface-variant/40">—</span>
+                                @else
+                                <span class="text-on-surface-variant/50">Status</span>
+                                <span class="ml-1 font-medium text-primary">Ready</span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                    <div class="space-y-1.5">
-                        <div class="flex justify-between text-[11px] text-on-surface-variant/50">
-                            <span>XP</span>
-                            <span>{{ $nextUnlock['current_xp'] }}/{{ $nextUnlock['xp_needed'] }}</span>
-                        </div>
-                        <div class="w-full bg-surface-container h-1.5 rounded-full">
-                            <div class="bg-secondary h-full rounded-full transition-all" style="width: {{ min(100, round(($nextUnlock['current_xp'] / $nextUnlock['xp_needed']) * 100)) }}%"></div>
-                        </div>
-                        <div class="flex justify-between text-[11px] text-on-surface-variant/50">
-                            <span>Practice Sets</span>
-                            <span>{{ $nextUnlock['sets_completed'] }}/{{ $nextUnlock['sets_needed'] }}</span>
-                        </div>
-                        <div class="w-full bg-surface-container h-1.5 rounded-full">
-                            <div class="bg-secondary h-full rounded-full transition-all" style="width: {{ min(100, round(($nextUnlock['sets_completed'] / $nextUnlock['sets_needed']) * 100)) }}%"></div>
-                        </div>
-                        <div class="flex justify-between text-[11px] text-on-surface-variant/50">
-                            <span>Global Avg Rating</span>
-                            <span class="{{ $nextUnlock['current_avg_rating'] >= $nextUnlock['avg_rating_needed'] ? 'text-primary' : 'text-on-surface-variant/50' }}">{{ $nextUnlock['current_avg_rating'] }}/{{ $nextUnlock['avg_rating_needed'] }}</span>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
             </div>
-            @endif
 
-            @php $masteryProgress = $progression->getMasteryProgress($concept); @endphp
+
             <div class="bg-white border border-outline-variant/50 rounded-xl p-4">
                 <h4 class="text-[13px] font-semibold text-on-surface mb-3">Mastery Requirements</h4>
                 <div class="space-y-2">
@@ -309,13 +356,9 @@
                 <h4 class="text-[13px] font-semibold text-on-surface mb-3">Ratings by Tier</h4>
                 <div class="space-y-3">
                     @php
-                        $tierColors = [
-                            'junior' => ['bg' => 'bg-primary/10', 'text' => 'text-primary', 'bar' => 'bg-primary'],
-                            'mid' => ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'bar' => 'bg-secondary'],
-                            'senior' => ['bg' => 'bg-tertiary/10', 'text' => 'text-tertiary', 'bar' => 'bg-tertiary'],
-                        ];
+                        $tierColors = config('gamification.tier_colors');
                     @endphp
-                    @foreach (['junior', 'mid', 'senior'] as $t)
+                    @foreach (config('gamification.tiers') as $t)
                     @php $colors = $tierColors[$t]; @endphp
                     <div>
                         <div class="flex items-center justify-between mb-1">
@@ -334,7 +377,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
             </div>
 
             @php $totalQuestions = $concept->generatedQuestions->count(); @endphp
@@ -371,7 +413,7 @@
                 <div class="space-y-2.5">
                     <div class="flex justify-between items-center">
                         <span class="text-[12px] text-on-surface-variant/60">Domain</span>
-                        <a href="{{ route('domains.show', $concept->domain) }}" class="text-[12px] text-primary font-medium hover:underline">{{ $concept->domain->name }} ({{ $concept->domain->concepts->count() }} concepts)</a>
+                        <a href="{{ route('domains.show', $concept->domain) }}" class="text-[12px] text-primary font-medium hover:underline">{{ $concept->domain?->name ?? 'Unknown' }} ({{ $concept->domain?->concepts->count() ?? 0 }} concepts)</a>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-[12px] text-on-surface-variant/60">Updated</span>

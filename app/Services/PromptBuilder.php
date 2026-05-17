@@ -10,31 +10,40 @@ class PromptBuilder
 {
     protected int $dedupQuestionCount = 15;
 
-    protected function buildGenerateQuestionsSystemPrompt(): string
+    protected function buildGenerateQuestionsSystemPrompt(bool $hasDomain = true): string
     {
-        return <<<'PROMPT'
+        $generationInstruction = 'Generate exactly 5 mock interview questions.';
+
+        $relevanceBlock = $hasDomain
+            ? "First, check if the following concept is relevant to its parent domain. If it is NOT relevant, return: {\"error\": \"unrelated\", \"message\": \"The concept is not related to the domain.\"}\n\nIf it IS relevant, {$generationInstruction}"
+            : $generationInstruction;
+
+        $jsonTemplates = '{"questions": ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]}';
+
+        if ($hasDomain) {
+            $jsonTemplates = '{"error": "unrelated", "message": "..."}' . "\nOR\n" . $jsonTemplates;
+        }
+
+        return <<<PROMPT
 You are a technical interview coach. Be simple, precise, and direct. No extra talking.
 
-First, check if the following concept is relevant to its parent domain. If it is NOT relevant, return: {"error": "unrelated", "message": "The concept is not related to the domain."}
-
-If it IS relevant, generate exactly 5 mock interview questions.
+{$relevanceBlock}
 
 Generate questions appropriate to the difficulty tier specified in the user prompt:
 - Junior: Focus on definitions, basic concepts, "what is X", fundamental understanding
 - Mid: Focus on comparisons, trade-offs, practical usage, "when to use X vs Y"
 - Senior: Focus on system design, edge cases, deep internals, architecture decisions
 
-Return ONLY a valid JSON object. Either:
-{"error": "unrelated", "message": "..."}
-OR
-{"questions": ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]}
+Return ONLY a valid JSON object.
+{$jsonTemplates}
 PROMPT;
     }
 
     protected function buildGenerateQuestionsUserPrompt(Concept $concept, ?User $user = null): string
     {
-        $domainContext = $concept->domain ? "Domain: {$concept->domain->name}" : '';
-        $domainDescription = ($concept->domain && $concept->domain->description) ? "\nDomain Description: {$concept->domain->description}" : '';
+        $hasDomain = (bool) $concept->domain;
+        $domainContext = $hasDomain ? "Domain: {$concept->domain->name}" : '(No domain specified)';
+        $domainDescription = ($hasDomain && $concept->domain->description) ? "\nDomain Description: {$concept->domain->description}" : '';
 
         $userContext = $this->buildUserContext($user);
 
@@ -42,22 +51,32 @@ PROMPT;
 
         $tier = $concept->getHighestUnlockedTier();
 
+        $domainInstruction = $hasDomain
+            ? " specifically within the context of the domain mentioned above"
+            : '';
+
+        $explanationBlock = trim($concept->explanation ?? '')
+            ? $concept->explanation
+            : '(No explanation written yet — generate questions based on the concept title alone)';
+
         return <<<PROMPT
 {$userContext}{$domainContext}{$domainDescription}
 Concept: {$concept->title}
 Tier: {$tier}
 Explanation:
-{$concept->explanation}
+{$explanationBlock}
 
-Generate 5 interview questions at the {$tier} level that test understanding of this concept, specifically within the context of the domain mentioned above.
+Generate 5 interview questions at the {$tier} level that test understanding of this concept{$domainInstruction}.
 {$dedupSection}
 PROMPT;
     }
 
     public function buildGenerateQuestionsMessages(Concept $concept, ?User $user = null): array
     {
+        $hasDomain = (bool) $concept->domain;
+
         return [
-            ['role' => 'system', 'content' => $this->buildGenerateQuestionsSystemPrompt()],
+            ['role' => 'system', 'content' => $this->buildGenerateQuestionsSystemPrompt($hasDomain)],
             ['role' => 'user', 'content' => $this->buildGenerateQuestionsUserPrompt($concept, $user)],
         ];
     }
@@ -126,6 +145,10 @@ PROMPT;
 
     protected function buildDedupSection(Concept $concept): string
     {
+        if (!$concept->exists) {
+            return '';
+        }
+
         $existingQuestions = $concept->generatedQuestions()
             ->orderBy('id', 'desc')
             ->limit($this->dedupQuestionCount)
@@ -143,7 +166,7 @@ PROMPT;
 
     protected function buildUserContext(?User $user): string
     {
-        if (!$user || !$user->specialization) {
+        if (!$user) {
             return '';
         }
 
