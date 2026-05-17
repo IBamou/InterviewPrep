@@ -5,23 +5,25 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware('active-quiz');
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'onboarding'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'onboarding', 'active-quiz'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/keep-alive', fn () => response()->noContent())->name('keep-alive');
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
     Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
     Route::get('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 });
 
-Route::middleware(['auth', 'onboarding'])->group(function () {
+Route::middleware(['auth', 'onboarding', 'active-quiz'])->group(function () {
     Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::get('/domains/create', [DomainController::class, 'create'])->name('domains.create');
@@ -53,6 +55,14 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
     Route::post('/concepts/{concept}/accept-explanation', [ConceptController::class, 'acceptExplanation'])->name('concepts.acceptExplanation');
     Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.status');
     Route::get('/domains/{domain}/concepts/archives', [ConceptController::class, 'archives'])->name('concepts.archives');
+
+    Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
+    Route::post('/quizzes', [QuizController::class, 'store'])->name('quizzes.store')->middleware('throttle:ai-actions');
+    Route::get('/quizzes/history', [QuizController::class, 'history'])->name('quizzes.history');
+    Route::get('/quizzes/{quiz}/results', [QuizController::class, 'results'])->name('quizzes.results');
+    Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quizzes.submit')->middleware('throttle:ai-actions');
+    Route::get('/quizzes/{domain}', [QuizController::class, 'byDomain'])->name('quizzes.byDomain')->whereNumber('domain');
+    Route::get('/quizzes/{domain}/{quiz}/active-quiz', [QuizController::class, 'active'])->name('quizzes.active')->scopeBindings();
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

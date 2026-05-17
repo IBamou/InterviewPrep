@@ -12,6 +12,8 @@ use App\Services\GroqService;
 use App\Services\ProgressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ConceptController extends Controller
@@ -250,18 +252,23 @@ class ConceptController extends Controller
                 return back()->with('error', $questions['message'] ?? 'The concept is not relevant to this domain.');
             }
 
-            $maxSet = $concept->generatedQuestions()->max('set_number') ?? 0;
-            $setNumber = $maxSet + 1;
             $tier = $concept->getHighestUnlockedTier();
 
-            foreach ($questions as $question) {
-                GeneratedQuestion::create([
-                    'concept_id' => $concept->id,
-                    'question' => $question,
-                    'set_number' => $setNumber,
-                    'tier' => $tier,
-                ]);
-            }
+            $setNumber = DB::transaction(function () use ($concept, $questions, $tier) {
+                $maxSet = $concept->generatedQuestions()->lockForUpdate()->max('set_number') ?? 0;
+                $setNumber = $maxSet + 1;
+
+                foreach ($questions as $question) {
+                    GeneratedQuestion::create([
+                        'concept_id' => $concept->id,
+                        'question' => $question,
+                        'set_number' => $setNumber,
+                        'tier' => $tier,
+                    ]);
+                }
+
+                return $setNumber;
+            });
 
             return redirect(route('concepts.practice', $concept) . '?page=' . $setNumber)
                 ->with('success', "Set {$setNumber}: 5 interview questions generated successfully.");
@@ -304,7 +311,6 @@ class ConceptController extends Controller
                 if (!$question) {
                     continue;
                 }
-                $question->update(['answer' => $item['answer'] ?? '']);
                 $qaPairs[] = [
                     'question_id' => $item['question_id'],
                     'question' => $question->question,
@@ -318,20 +324,26 @@ class ConceptController extends Controller
             $tier = $firstQuestion ? $firstQuestion->tier : 'junior';
 
             $isFirstToday = $progression->isFirstPracticeToday($concept);
-            $streakBonus = $progression->getStreakBonus($concept);
 
-            $totalXp = 0;
-            $totalRating = 0;
-            $ratedCount = 0;
-            $tierRatingSum = 0;
-            $tierRatingCount = 0;
-            $firstGq = $questions->first();
-            $submittedSetNumber = $firstGq ? $firstGq->set_number : null;
-            foreach ($evaluations as $eval) {
-                $idx = $eval['question_index'] ?? null;
-                if ($idx !== null && isset($qaPairs[$idx])) {
-                    $gq = $questions->get($qaPairs[$idx]['question_id']);
-                    if ($gq) {
+            $result = DB::transaction(function () use ($questions, $qaPairs, $evaluations, $concept, $progression, $tier, $isFirstToday) {
+                $streakBonus = $progression->getStreakBonus($concept);
+
+                $totalXp = 0;
+                $totalRating = 0;
+                $ratedCount = 0;
+                $tierRatingSum = 0;
+                $tierRatingCount = 0;
+                $firstGq = $questions->first();
+                $submittedSetNumber = $firstGq ? $firstGq->set_number : null;
+
+                foreach ($qaPairs as $idx => $pair) {
+                    $gq = $questions->get($pair['question_id']);
+                    if (!$gq) continue;
+
+                    $gq->update(['answer' => $pair['answer']]);
+
+                    $eval = $evaluations[$idx] ?? null;
+                    if ($eval) {
                         $gq->update([
                             'rating' => $eval['rating'] ?? null,
                             'feedback' => $eval['feedback'] ?? null,
@@ -347,55 +359,72 @@ class ConceptController extends Controller
                         }
                     }
                 }
-            }
 
-            $isPerfectSet = $progression->isPerfectSet($evaluations);
-            $bonusXp = 0;
-            if ($isFirstToday) {
-                $bonusXp += config('gamification.bonus_first_today');
-            }
-            if ($isPerfectSet) {
-                $bonusXp += config('gamification.bonus_perfect_set');
-            }
+                $isPerfectSet = $progression->isPerfectSet($evaluations);
+                $bonusXp = 0;
+                if ($isFirstToday) {
+                    $bonusXp += config('gamification.bonus_first_today');
+                }
+                if ($isPerfectSet) {
+                    $bonusXp += config('gamification.bonus_perfect_set');
+                }
 
-            if ($submittedSetNumber !== null && $progression->hasRatingImproved($concept, $tier, $submittedSetNumber, $evaluations)) {
-                $bonusXp += config('gamification.bonus_rating_improvement');
-                $ratingImproved = true;
-            } else {
                 $ratingImproved = false;
-            }
+                if ($submittedSetNumber !== null && $progression->hasRatingImproved($concept, $tier, $submittedSetNumber, $evaluations)) {
+                    $bonusXp += config('gamification.bonus_rating_improvement');
+                    $ratingImproved = true;
+                }
 
-            $totalXp += $bonusXp;
+                $totalXp += $bonusXp;
 
-            $progression->updateStreak($concept);
-            $milestoneXp = $progression->checkStreakMilestone($concept);
-            $totalXp += $milestoneXp;
+                $progression->updateStreak($concept);
+                $milestoneXp = $progression->checkStreakMilestone($concept);
+                $totalXp += $milestoneXp;
 
-            $concept = $progression->awardXp($concept, $totalXp, $tier);
-            $masteryScore = $progression->calculateMasteryScore($concept);
-            $concept->update(['mastery_score' => $masteryScore]);
+                $concept = $progression->awardXp($concept, $totalXp, $tier);
+                $masteryScore = $progression->calculateMasteryScore($concept);
+                $concept->update(['mastery_score' => $masteryScore]);
 
-            $avgRating = $ratedCount > 0 ? $totalRating / $ratedCount : 0;
-            $sessions = $concept->practice_sessions ?? [];
-            $sessions[] = [
-                'date' => now()->toDateString(),
-                'avg_rating' => $avgRating,
-                'xp_gained' => $totalXp,
-            ];
-            $concept->update(['practice_sessions' => $sessions]);
+                $avgRating = $ratedCount > 0 ? round($totalRating / $ratedCount, 1) : 0;
+                $sessions = $concept->practice_sessions ?? [];
+                $sessions[] = [
+                    'date' => now()->toDateString(),
+                    'avg_rating' => $avgRating,
+                    'xp_gained' => $totalXp,
+                ];
+                $concept->update(['practice_sessions' => $sessions]);
 
-            $tierRatings = $concept->tier_ratings ?? config('gamification.default_tier_ratings');
-            $tierRatings[$tier]['sum'] = ($tierRatings[$tier]['sum'] ?? 0) + $tierRatingSum;
-            $tierRatings[$tier]['count'] = ($tierRatings[$tier]['count'] ?? 0) + $tierRatingCount;
-            $concept->update(['tier_ratings' => $tierRatings]);
+                $tierRatings = $concept->tier_ratings ?? config('gamification.default_tier_ratings');
+                $tierRatings[$tier]['sum'] = ($tierRatings[$tier]['sum'] ?? 0) + $tierRatingSum;
+                $tierRatings[$tier]['count'] = ($tierRatings[$tier]['count'] ?? 0) + $tierRatingCount;
+                $concept->update(['tier_ratings' => $tierRatings]);
 
-            $concept = $progression->recordPracticeSet($concept, $avgRating);
-            $concept = $progression->updateAutoStatus($concept);
+                $concept = $progression->recordPracticeSet($concept, $avgRating);
+                $concept = $progression->updateAutoStatus($concept);
+
+                return [
+                    'concept' => $concept,
+                    'totalXp' => $totalXp,
+                    'bonusXp' => $bonusXp,
+                    'isPerfectSet' => $isPerfectSet,
+                    'ratingImproved' => $ratingImproved,
+                    'milestoneXp' => $milestoneXp,
+                    'avgRating' => $avgRating,
+                    'submittedSetNumber' => $submittedSetNumber,
+                ];
+            });
+
+            $concept = $result['concept'];
+            $totalXp = $result['totalXp'];
+            $bonusXp = $result['bonusXp'];
+            $isPerfectSet = $result['isPerfectSet'];
+            $ratingImproved = $result['ratingImproved'];
+            $milestoneXp = $result['milestoneXp'];
+            $avgRating = $result['avgRating'];
+            $submittedSetNumber = $result['submittedSetNumber'];
+
             $nextUnlock = $progression->getNextUnlockThreshold($concept);
             $masteryTier = $progression->getMasteryTier($concept->mastery_score ?? 0);
-
-            $submittedQuestion = GeneratedQuestion::find($qaPairs[0]['question_id']);
-            $submittedSetNumber = $submittedQuestion ? $submittedQuestion->set_number : 1;
 
             $tierSets = $concept->generatedQuestions()
                 ->where('tier', $tier)
@@ -412,7 +441,7 @@ class ConceptController extends Controller
                 'xp_earned' => $totalXp,
                 'bonus_xp' => $bonusXp,
                 'new_xp' => $concept->xp,
-                'avg_rating' => round($avgRating, 1),
+                'avg_rating' => $avgRating,
                 'mastery_score' => $concept->mastery_score,
                 'mastery_tier' => $masteryTier['label'],
                 'next_unlock' => $nextUnlock,
@@ -420,11 +449,12 @@ class ConceptController extends Controller
                 'streak' => $concept->practice_streak,
                 'is_perfect' => $isPerfectSet,
                 'first_today' => $isFirstToday,
-                'rating_improved' => $ratingImproved ?? false,
+                'rating_improved' => $ratingImproved,
                 'milestone_xp' => $milestoneXp,
                 'submitted_set' => $submittedSetNumber,
             ]);
-        } catch (\RuntimeException $e) {
+        } catch (\Throwable $e) {
+            Log::error('Answer evaluation failed for concept #' . $concept->id . ': ' . $e->getMessage());
             return back()->with('error', 'Failed to evaluate answers: ' . $e->getMessage());
         }
     }
@@ -438,7 +468,7 @@ class ConceptController extends Controller
             ->whereHas('domain', function ($query) {
                 $query->where('user_id', Auth::id());
             })
-            ->get();
+            ->paginate(20);
 
         return view('concepts.archives', compact('concepts', 'domain'));
     }

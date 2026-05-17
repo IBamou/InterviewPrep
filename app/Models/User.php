@@ -26,6 +26,11 @@ class User extends Authenticatable
         return $this->hasMany(Domain::class);
     }
 
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function (User $user) {
@@ -34,6 +39,7 @@ class User extends Authenticatable
             GeneratedQuestion::whereIn('concept_id', $conceptIds)->delete();
             Concept::whereIn('domain_id', $domainIds)->delete();
             $user->domains()->delete();
+            $user->quizzes()->delete();
         });
     }
 

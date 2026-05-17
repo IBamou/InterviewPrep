@@ -9,13 +9,13 @@
         <p id="confirm-message" class="text-[13px] text-on-surface-variant/70 mb-5"></p>
         <div class="flex gap-2 justify-end">
             <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">Cancel</button>
-            <button type="button" id="confirm-action" class="px-4 py-2 bg-error text-white rounded-lg text-[13px] font-medium hover:bg-error/90 transition-all">Confirm</button>
+            <button type="button" id="confirm-action" onclick="if (confirmCallback) { confirmCallback(); closeConfirmModal(); }" class="px-4 py-2 bg-error text-white rounded-lg text-[13px] font-medium hover:bg-error/90 transition-all">Confirm</button>
         </div>
     </div>
 </div>
 
 <script>
-let confirmCallback = null;
+var confirmCallback = null;
 function showConfirmModal(title, message, callback, variant = 'danger') {
     const modal = document.getElementById('confirm-modal');
     const dialog = document.getElementById('confirm-dialog');
@@ -57,11 +57,6 @@ function closeConfirmModal() {
         confirmCallback = null;
     }, 200);
 }
-
-document.getElementById('confirm-action').addEventListener('click', () => {
-    if (confirmCallback) confirmCallback();
-    closeConfirmModal();
-});
 
 document.getElementById('confirm-modal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeConfirmModal();

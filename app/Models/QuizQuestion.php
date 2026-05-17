@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class QuizQuestion extends Model
+{
+    use HasFactory;
+
+    protected $fillable = ['quiz_id', 'concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'sort_order'];
+
+    public function quiz(): BelongsTo
+    {
+        return $this->belongsTo(Quiz::class);
+    }
+
+    public function concept(): BelongsTo
+    {
+        return $this->belongsTo(Concept::class);
+    }
+}

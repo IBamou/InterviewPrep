@@ -356,6 +356,38 @@ class GroqService
         return $parsed;
     }
 
+    public function generateQuizQuestions(Domain $domain, iterable $concepts): array
+    {
+        $messages = $this->promptBuilder->buildQuizMessages($domain, $concepts);
+
+        $response = $this->client()->post('/chat/completions', [
+            'model' => $this->defaultModel,
+            'messages' => $messages,
+            'max_tokens' => $this->defaults['max_tokens'] * 2,
+            'temperature' => $this->defaults['temperature'],
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        if ($response->failed()) {
+            $this->handleError($response);
+        }
+
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+
+        $questions = $decoded['choices'][0]['message']['content'] ?? null;
+        if (!$questions) {
+            throw new \RuntimeException('Groq returned an empty response.');
+        }
+
+        $parsed = json_decode($questions, true);
+        if (!is_array($parsed) || !isset($parsed['questions']) || !is_array($parsed['questions'])) {
+            throw new \RuntimeException('Failed to parse quiz questions from Groq response.');
+        }
+
+        return $parsed['questions'];
+    }
+
     protected function handleError(Response $response): void
     {
         $body = $response->json();

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class PromptBuilder
 {
@@ -200,6 +201,11 @@ PROMPT;
         return "User Profile:\n" . implode("\n", $parts) . "\n\n";
     }
 
+    protected function buildUserProfile(?User $user): string
+    {
+        return $this->buildUserContext($user);
+    }
+
     protected function buildImproveDomainDescriptionSystemPrompt(): string
     {
         return <<<'PROMPT'
@@ -343,6 +349,56 @@ PROMPT;
         return [
             ['role' => 'system', 'content' => $this->buildVerifyConceptTitleSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildVerifyConceptTitleUserPrompt($title, $domainName)],
+        ];
+    }
+
+    protected function buildQuizSystemPrompt(): string
+    {
+        return <<<'PROMPT'
+You are a technical interview coach. Be simple, precise, and direct. No extra talking.
+
+Generate 12 to 15 mock interview questions covering ALL the concepts listed below. Mix questions across concepts — don't ask about the same concept twice in a row.
+
+Questions should reflect multiple difficulty levels:
+- Junior: Definitions, basic understanding, "what is X"
+- Mid: Comparisons, trade-offs, practical usage
+- Senior: Edge cases, internals, architecture decisions
+
+Return ONLY a valid JSON object:
+{"questions": [{"question": "What is X?", "concept": "Concept Name"}, ...]}
+PROMPT;
+    }
+
+    protected function buildQuizUserPrompt(Domain $domain, iterable $concepts): string
+    {
+        $conceptList = '';
+        foreach ($concepts as $i => $c) {
+            $conceptList .= ($i + 1) . ". {$c->title}";
+            if (trim($c->explanation ?? '')) {
+                $conceptList .= " — {$c->explanation}";
+            }
+            $conceptList .= "\n";
+        }
+
+        $domainContext = "Domain: {$domain->name}\n";
+        if ($domain->description) {
+            $domainContext .= "Domain Description: {$domain->description}\n";
+        }
+
+        return <<<PROMPT
+{$domainContext}
+Concepts to cover:
+{$conceptList}
+
+Generate 12 to 15 interview questions that test understanding of these concepts within the context of {$domain->name}. Mix the questions across concepts evenly.
+PROMPT;
+    }
+
+    public function buildQuizMessages(Domain $domain, iterable $concepts): array
+    {
+        return [
+            ['role' => 'system', 'content' => $this->buildQuizSystemPrompt()],
+            ['role' => 'user', 'content' => $this->buildQuizUserPrompt($domain, $concepts)],
         ];
     }
 }

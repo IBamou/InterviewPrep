@@ -24,10 +24,16 @@ class Domain extends Model
         return $this->hasMany(Concept::class);
     }
 
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function (Domain $domain) {
             $domain->concepts()->delete();
+            $domain->quizzes()->delete();
         });
 
         static::restored(function (Domain $domain) {
