@@ -15,7 +15,7 @@ class UpdateConceptRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'explanation' => ['required', 'string'],
+            'explanation' => ['nullable', 'string'],
         ];
     }
 }

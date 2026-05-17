@@ -16,13 +16,13 @@
                 All ({{ $totalResults }})
             </a>
             <a href="{{ route('search', ['q' => $query, 'type' => 'domains']) }}" class="px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors {{ $type === 'domains' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container/50 rounded-t-lg' }}">
-                Domains ({{ $domains->count() }})
+                Domains ({{ $domainCount }})
             </a>
             <a href="{{ route('search', ['q' => $query, 'type' => 'concepts']) }}" class="px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors {{ $type === 'concepts' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container/50 rounded-t-lg' }}">
-                Concepts ({{ $concepts->count() }})
+                Concepts ({{ $conceptCount }})
             </a>
             <a href="{{ route('search', ['q' => $query, 'type' => 'questions']) }}" class="px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors {{ $type === 'questions' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container/50 rounded-t-lg' }}">
-                Questions ({{ $questions->count() }})
+                Questions ({{ $questionCount }})
             </a>
         </div>
 
@@ -52,6 +52,11 @@
                 </a>
                 @endforeach
             </div>
+            @if ($domains instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div class="mt-4">
+                {{ $domains->links() }}
+            </div>
+            @endif
         </section>
         @endif
 
@@ -81,6 +86,11 @@
                 </a>
                 @endforeach
             </div>
+            @if ($concepts instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div class="mt-4">
+                {{ $concepts->links() }}
+            </div>
+            @endif
         </section>
         @endif
 
@@ -116,6 +126,11 @@
                 </a>
                 @endforeach
             </div>
+            @if ($questions instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div class="mt-4">
+                {{ $questions->links() }}
+            </div>
+            @endif
         </section>
         @endif
         @endif

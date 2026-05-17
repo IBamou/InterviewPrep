@@ -23,4 +23,15 @@ class Domain extends Model
     {
         return $this->hasMany(Concept::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Domain $domain) {
+            $domain->concepts()->delete();
+        });
+
+        static::restored(function (Domain $domain) {
+            $domain->concepts()->withTrashed()->restore();
+        });
+    }
 }

@@ -51,6 +51,7 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
     Route::delete('/concepts/{concept}/force', [ConceptController::class, 'forceDelete'])->name('concepts.forceDelete')->withTrashed('concept');
     Route::post('/concepts/{concept}/improve-explanation', [ConceptController::class, 'improveExplanation'])->name('concepts.improveExplanation')->middleware('throttle:ai-actions');
     Route::post('/concepts/{concept}/accept-explanation', [ConceptController::class, 'acceptExplanation'])->name('concepts.acceptExplanation');
+    Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.status');
     Route::get('/domains/{domain}/concepts/archives', [ConceptController::class, 'archives'])->name('concepts.archives');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

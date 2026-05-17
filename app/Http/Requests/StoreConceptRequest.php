@@ -15,7 +15,7 @@ class StoreConceptRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'min:3', 'max:255'],
-            'explanation' => ['required', 'string'],
+            'explanation' => ['nullable', 'string'],
         ];
     }
 }
