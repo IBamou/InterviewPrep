@@ -11,13 +11,17 @@ use Illuminate\Support\Facades\Auth;
 
 class DomainController extends Controller
 {
+    private function withMasteredCount(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->withCount(['concepts as mastered_count' => function ($q) {
+            $q->where('status', 'mastered');
+        }]);
+    }
+
     public function index()
     {
-        $domains = Domain::where('user_id', Auth::id())
+        $domains = $this->withMasteredCount(Domain::where('user_id', Auth::id()))
             ->withCount('concepts')
-            ->withCount(['concepts as mastered_count' => function ($query) {
-                $query->where('status', 'mastered');
-            }])
             ->get();
 
         return view('domains.index', compact('domains'));
@@ -44,9 +48,7 @@ class DomainController extends Controller
     {
         $this->authorize('view', $domain);
 
-        $domain->loadCount(['concepts', 'concepts as mastered_count' => function ($query) {
-            $query->where('status', 'mastered');
-        }])->load('concepts');
+        $domain->loadCount(['concepts', 'concepts as mastered_count' => fn ($q) => $q->where('status', 'mastered')])->load('concepts');
 
         return view('domains.show', compact('domain'));
     }
@@ -84,7 +86,7 @@ class DomainController extends Controller
     {
         $domains = Domain::onlyTrashed()
             ->where('user_id', Auth::id())
-            ->get();
+            ->paginate(20);
 
         return view('domains.archives', compact('domains'));
     }

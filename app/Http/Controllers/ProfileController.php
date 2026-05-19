@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\InterviewProfileUpdateRequest;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,6 +49,22 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    public function updateInterview(InterviewProfileUpdateRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        if (isset($data['tech_stack']) && is_array($data['tech_stack'])) {
+            $data['tech_stack'] = array_values(array_filter($data['tech_stack']));
+        }
+
+        $data['onboarding_completed'] = true;
+
+        $user->fill($data)->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
     /**
      * Delete the user's account.
      */
@@ -66,6 +83,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::route('dashboard');
     }
 }

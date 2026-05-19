@@ -84,8 +84,8 @@
     <script>
     function explanationGenerator() {
         return {
-            title: '{{ old('title', '') }}',
-            explanation: '{{ old('explanation', '') }}',
+            title: @js(old('title', '')),
+            explanation: @js(old('explanation', '')),
             loading: false,
             error: '',
             verifying: false,

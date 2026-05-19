@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\User;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -37,7 +38,41 @@ class GroqService
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])
-            ->timeout($this->defaults['timeout']);
+            ->timeout($this->defaults['timeout'])
+            ->retry(2, 1000);
+    }
+
+    private function postJson(string $url, array $data): \Illuminate\Http\Client\Response
+    {
+        try {
+            $response = $this->client()->post($url, $data);
+            if ($response->failed()) {
+                $this->handleError($response);
+            }
+            return $response;
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Groq API request failed: ' . $e->getMessage());
+        }
+    }
+
+    private function extractContent(\Illuminate\Http\Client\Response $response): string
+    {
+        $body = $response->body();
+        $decoded = json_decode($body, true);
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
+        if (!$content) {
+            throw new \RuntimeException('Groq returned an empty response.');
+        }
+        return $content;
+    }
+
+    private function parseJsonContent(string $content): array
+    {
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed)) {
+            throw new \RuntimeException('Failed to parse JSON from Groq response.');
+        }
+        return $parsed;
     }
 
     public function chat(
@@ -49,16 +84,12 @@ class GroqService
             ['role' => 'user', 'content' => $userMessage],
         ]);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $model ?? $this->defaultModel,
             'messages' => $messages,
             'max_tokens' => $this->defaults['max_tokens'],
             'temperature' => $this->defaults['temperature'],
         ]);
-
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
 
         return $response->json('choices.0.message.content');
     }
@@ -75,16 +106,12 @@ class GroqService
             [['role' => 'user', 'content' => $userMessage]]
         );
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $model ?? $this->defaultModel,
             'messages' => $messages,
             'max_tokens' => $this->defaults['max_tokens'],
             'temperature' => $this->defaults['temperature'],
         ]);
-
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
 
         return $response->json('choices.0.message.content');
     }
@@ -152,30 +179,15 @@ class GroqService
     {
         $messages = $this->promptBuilder->buildGenerateQuestionsMessages($concept, $user);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $this->defaultModel,
             'messages' => $messages,
-            'max_tokens' => $this->defaults['max_tokens'],
+            'max_tokens' => config('groq.tokens.generation'),
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
         ]);
 
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
-
-        $body = $response->body();
-        $decoded = json_decode($body, true);
-
-        $questions = $decoded['choices'][0]['message']['content'] ?? null;
-        if (!$questions) {
-            throw new \RuntimeException('Groq returned an empty response.');
-        }
-
-        $parsed = json_decode($questions, true);
-        if (!is_array($parsed)) {
-            throw new \RuntimeException('Failed to parse questions from Groq response.');
-        }
+        $parsed = $this->parseJsonContent($this->extractContent($response));
 
         if (isset($parsed['error']) && $parsed['error'] === 'unrelated') {
             return $parsed;
@@ -192,60 +204,92 @@ class GroqService
     {
         $messages = $this->promptBuilder->buildEvaluateAnswersMessages($concept, $answers);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $this->defaultModel,
             'messages' => $messages,
-            'max_tokens' => $this->defaults['max_tokens'] * 2,
+            'max_tokens' => config('groq.tokens.evaluation'),
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
         ]);
 
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
+        $parsed = $this->parseJsonContent($this->extractContent($response));
 
-        $body = $response->body();
-        $decoded = json_decode($body, true);
-        $content = $decoded['choices'][0]['message']['content'] ?? null;
-
-        if (!$content) {
-            throw new \RuntimeException('Groq returned an empty response.');
-        }
-
-        $parsed = json_decode($content, true);
-        if (!is_array($parsed) || !isset($parsed['evaluations']) || !is_array($parsed['evaluations'])) {
+        if (!isset($parsed['evaluations']) || !is_array($parsed['evaluations'])) {
             throw new \RuntimeException('Failed to parse evaluations from Groq response.');
         }
 
         return $parsed['evaluations'];
     }
 
+    public function evaluateAnswersBatch(array $batches): array
+    {
+        $results = [];
+
+        if (empty($batches)) {
+            return $results;
+        }
+
+        $responses = Http::pool(function (Pool $pool) use ($batches) {
+            $requests = [];
+            foreach ($batches as $i => $batch) {
+                $messages = $this->promptBuilder->buildEvaluateAnswersMessages(
+                    $batch['concept'],
+                    $batch['qa_pairs']
+                );
+                $requests[] = $pool
+                    ->as("batch_{$i}")
+                    ->baseUrl($this->baseUrl)
+                    ->withToken($this->apiKey)
+                    ->withHeaders(['Content-Type' => 'application/json', 'Accept' => 'application/json'])
+                    ->timeout($this->defaults['timeout'])
+                    ->post('/chat/completions', [
+                        'model' => $this->defaultModel,
+                        'messages' => $messages,
+                        'max_tokens' => config('groq.tokens.evaluation'),
+                        'temperature' => $this->defaults['temperature'],
+                        'response_format' => ['type' => 'json_object'],
+                    ]);
+            }
+            return $requests;
+        });
+
+        foreach ($responses as $key => $response) {
+            if ($response instanceof Response && !$response->failed()) {
+                $content = $response->json('choices.0.message.content');
+                if ($content) {
+                    $parsed = json_decode($content, true);
+                    if ($parsed && isset($parsed['evaluations'])) {
+                        $batchIndex = (int) str_replace('batch_', '', $key);
+                        $qaPairs = $batches[$batchIndex]['qa_pairs'] ?? [];
+                        foreach ($parsed['evaluations'] as $eval) {
+                            $idx = $eval['question_index'] ?? null;
+                            if ($idx !== null && isset($qaPairs[$idx])) {
+                                $results[$qaPairs[$idx]['question_id']] = $eval;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
+
     public function improveDomainDescription(Domain $domain): string
     {
         $messages = $this->promptBuilder->buildImproveDomainDescriptionMessages($domain);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $this->defaultModel,
             'messages' => $messages,
-            'max_tokens' => 300,
+            'max_tokens' => config('groq.tokens.description', 300),
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
         ]);
 
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
+        $parsed = $this->parseJsonContent($this->extractContent($response));
 
-        $body = $response->body();
-        $decoded = json_decode($body, true);
-
-        $content = $decoded['choices'][0]['message']['content'] ?? null;
-        if (!$content) {
-            throw new \RuntimeException('Groq returned an empty response.');
-        }
-
-        $parsed = json_decode($content, true);
-        if (!is_array($parsed) || !isset($parsed['improved_description'])) {
+        if (!isset($parsed['improved_description'])) {
             throw new \RuntimeException('Failed to parse improved description from Groq response.');
         }
 
@@ -256,28 +300,17 @@ class GroqService
     {
         $messages = $this->promptBuilder->buildImproveConceptExplanationMessages($concept);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $this->defaultModel,
             'messages' => $messages,
-            'max_tokens' => 500,
+            'max_tokens' => config('groq.tokens.explanation', 500),
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
         ]);
 
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
+        $parsed = $this->parseJsonContent($this->extractContent($response));
 
-        $body = $response->body();
-        $decoded = json_decode($body, true);
-
-        $content = $decoded['choices'][0]['message']['content'] ?? null;
-        if (!$content) {
-            throw new \RuntimeException('Groq returned an empty response.');
-        }
-
-        $parsed = json_decode($content, true);
-        if (!is_array($parsed) || !isset($parsed['improved_explanation'])) {
+        if (!isset($parsed['improved_explanation'])) {
             throw new \RuntimeException('Failed to parse improved explanation from Groq response.');
         }
 
@@ -288,30 +321,15 @@ class GroqService
     {
         $messages = $this->promptBuilder->buildGenerateConceptExplanationMessages($title, $domainName);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $this->defaultModel,
             'messages' => $messages,
-            'max_tokens' => 500,
+            'max_tokens' => config('groq.tokens.explanation', 500),
             'temperature' => $this->defaults['temperature'],
             'response_format' => ['type' => 'json_object'],
         ]);
 
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
-
-        $body = $response->body();
-        $decoded = json_decode($body, true);
-
-        $content = $decoded['choices'][0]['message']['content'] ?? null;
-        if (!$content) {
-            throw new \RuntimeException('Groq returned an empty response.');
-        }
-
-        $parsed = json_decode($content, true);
-        if (!is_array($parsed)) {
-            throw new \RuntimeException('Failed to parse explanation from Groq response.');
-        }
+        $parsed = $this->parseJsonContent($this->extractContent($response));
 
         if (isset($parsed['error']) && $parsed['error'] === 'invalid') {
             return $parsed;
@@ -328,32 +346,42 @@ class GroqService
     {
         $messages = $this->promptBuilder->buildVerifyConceptTitleMessages($title, $domainName);
 
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->postJson('/chat/completions', [
             'model' => $this->defaultModel,
             'messages' => $messages,
-            'max_tokens' => 100,
-            'temperature' => 0.2,
+            'max_tokens' => config('groq.tokens.verification', 100),
+            'temperature' => config('groq.temperatures.verification', 0.2),
             'response_format' => ['type' => 'json_object'],
         ]);
 
-        if ($response->failed()) {
-            $this->handleError($response);
-        }
+        $parsed = $this->parseJsonContent($this->extractContent($response));
 
-        $body = $response->body();
-        $decoded = json_decode($body, true);
-
-        $content = $decoded['choices'][0]['message']['content'] ?? null;
-        if (!$content) {
-            throw new \RuntimeException('Groq returned an empty response.');
-        }
-
-        $parsed = json_decode($content, true);
-        if (!is_array($parsed) || !isset($parsed['valid'])) {
+        if (!isset($parsed['valid'])) {
             throw new \RuntimeException('Failed to parse verification result from Groq response.');
         }
 
         return $parsed;
+    }
+
+    public function generateQuizQuestions(Domain $domain, iterable $concepts, int $questionCount): array
+    {
+        $messages = $this->promptBuilder->buildQuizMessages($domain, $concepts, $questionCount);
+
+        $response = $this->postJson('/chat/completions', [
+            'model' => $this->defaultModel,
+            'messages' => $messages,
+            'max_tokens' => config('groq.tokens.generation'),
+            'temperature' => $this->defaults['temperature'],
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        $parsed = $this->parseJsonContent($this->extractContent($response));
+
+        if (!isset($parsed['questions']) || !is_array($parsed['questions'])) {
+            throw new \RuntimeException('Failed to parse quiz questions from Groq response.');
+        }
+
+        return $parsed['questions'];
     }
 
     protected function handleError(Response $response): void

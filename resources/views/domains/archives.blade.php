@@ -50,5 +50,9 @@
         </div>
         @endforeach
     </div>
+
+    <div class="mt-4">
+        {{ $domains->links() }}
+    </div>
     @endif
 </x-app-layout>

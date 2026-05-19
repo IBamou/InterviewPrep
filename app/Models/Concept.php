@@ -15,6 +15,13 @@ class Concept extends Model
 
     protected $fillable = ['domain_id', 'title', 'explanation', 'status', 'xp', 'unlocked_tiers', 'mastery_score', 'practice_sessions', 'practice_sets_completed', 'total_rating_sum', 'tier_xp', 'tier_ratings', 'practice_streak', 'streak_milestones'];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Concept $concept) {
+            $concept->generatedQuestions()->delete();
+        });
+    }
+
     public function setTitleAttribute($value): void
     {
         $this->attributes['title'] = ucfirst(trim($value));
@@ -80,5 +87,60 @@ class Concept extends Model
         if (in_array('senior', $tiers)) return 'senior';
         if (in_array('mid', $tiers)) return 'mid';
         return 'junior';
+    }
+
+    public function getEvaluatedSetCount(): int
+    {
+        return $this->generatedQuestions()
+            ->whereNotNull('rating')
+            ->distinct('set_number')
+            ->count('set_number');
+    }
+
+    private function ensureQuizEval(): array
+    {
+        if (!isset($this->_quizEval)) {
+            $reqs = config('quiz.requirements', []);
+            $minSets = $reqs['min_evaluated_sets'] ?? 1;
+            $minRating = $reqs['min_avg_rating'] ?? 2.5;
+            $hasExplanation = !($reqs['requires_explanation'] ?? true) || !empty(trim($this->explanation ?? ''));
+            $evaluatedSets = $this->getEvaluatedSetCount();
+            $avgRating = $this->getGlobalAvgRating();
+
+            $status = 'ready';
+            $message = 'Ready for quiz';
+            if (!$hasExplanation) {
+                $status = 'locked';
+                $message = 'Write an explanation first';
+            } elseif ($evaluatedSets < $minSets) {
+                $status = 'needs_practice';
+                $message = 'Complete at least ' . $minSets . ' practice set' . ($minSets > 1 ? 's' : '');
+            } elseif ($avgRating < $minRating) {
+                $status = 'needs_improvement';
+                $message = 'Average rating needs to be >= ' . $minRating . ' (currently ' . $avgRating . ')';
+            }
+
+            $this->_quizEval = [
+                'status' => $status,
+                'message' => $message,
+                'isReady' => $status === 'ready',
+            ];
+        }
+        return $this->_quizEval;
+    }
+
+    public function isQuizReady(): bool
+    {
+        return $this->ensureQuizEval()['isReady'];
+    }
+
+    public function getQuizStatus(): string
+    {
+        return $this->ensureQuizEval()['status'];
+    }
+
+    public function getQuizMessage(): string
+    {
+        return $this->ensureQuizEval()['message'];
     }
 }

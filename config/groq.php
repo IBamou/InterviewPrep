@@ -50,4 +50,21 @@ return [
         'timeout'     => (int) env('GROQ_TIMEOUT', 30),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Per-operation token limits
+    |--------------------------------------------------------------------------
+    */
+    'tokens' => [
+        'description' => 300,
+        'explanation' => 500,
+        'evaluation'  => (int) env('GROQ_MAX_TOKENS', 1024) * 2,
+        'generation'  => (int) env('GROQ_GENERATION_TOKENS', (int) env('GROQ_MAX_TOKENS', 1024) * 8),
+        'verification' => 100,
+    ],
+
+    'temperatures' => [
+        'verification' => 0.2,
+    ],
+
 ];

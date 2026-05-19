@@ -6,18 +6,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class GeneratedQuestion extends Model
+class QuizQuestion extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'set_number', 'tier'];
+    protected $fillable = ['quiz_id', 'concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'sort_order'];
 
     protected function casts(): array
     {
         return [
             'rating' => 'integer',
-            'set_number' => 'integer',
+            'sort_order' => 'integer',
         ];
+    }
+
+    public function quiz(): BelongsTo
+    {
+        return $this->belongsTo(Quiz::class);
     }
 
     public function concept(): BelongsTo

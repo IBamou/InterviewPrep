@@ -39,7 +39,7 @@ tailwind.config = {
 <a href="{{ route('login') }}" class="text-[13px] text-on-surface-variant hover:text-primary transition-colors">Log In</a>
 <a href="{{ route('register') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">Get Started</a>
 @else
-<a href="{{ url('/dashboard') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">Dashboard</a>
+<a href="{{ route('dashboard') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">Dashboard</a>
 @endguest
 </div>
 </header>

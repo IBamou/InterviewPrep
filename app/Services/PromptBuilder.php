@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class PromptBuilder
 {
@@ -15,7 +16,7 @@ class PromptBuilder
         $generationInstruction = 'Generate exactly 5 mock interview questions.';
 
         $relevanceBlock = $hasDomain
-            ? "First, check if the following concept is relevant to its parent domain. If it is NOT relevant, return: {\"error\": \"unrelated\", \"message\": \"The concept is not related to the domain.\"}\n\nIf it IS relevant, {$generationInstruction}"
+            ? "First, check if the following concept is relevant to its parent domain ONLY. Ignore the user's profile, specialization, and background — relevance is purely about whether the concept belongs under the given domain. If it is NOT relevant to the domain, return: {\"error\": \"unrelated\", \"message\": \"The concept is not related to the domain.\"}\n\nIf it IS relevant, {$generationInstruction}"
             : $generationInstruction;
 
         $jsonTemplates = '{"questions": ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]}';
@@ -343,6 +344,87 @@ PROMPT;
         return [
             ['role' => 'system', 'content' => $this->buildVerifyConceptTitleSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildVerifyConceptTitleUserPrompt($title, $domainName)],
+        ];
+    }
+
+    protected function buildQuizSystemPrompt(int $questionCount): string
+    {
+        return <<<PROMPT
+You are a technical interview coach. Be simple, precise, and direct. No extra talking.
+
+Generate {$questionCount} mock interview questions covering ALL the concepts listed below. Mix questions across concepts — don't ask about the same concept twice in a row.
+
+Each concept has a difficulty tier. Match question difficulty to the concept's tier:
+- Junior: Definitions, basic understanding, "what is X"
+- Mid: Comparisons, trade-offs, practical usage
+- Senior: Edge cases, internals, architecture decisions
+
+CRITICAL — DO NOT repeat or rephrase any questions listed in the "Previously generated questions" section. Every question must be new and unique.
+
+Return ONLY a valid JSON object:
+{"questions": [{"question": "What is X?", "concept": "Concept Name"}, ...]}
+PROMPT;
+    }
+
+    protected function buildQuizUserPrompt(Domain $domain, iterable $concepts, int $questionCount): string
+    {
+        $conceptList = '';
+        foreach ($concepts as $i => $c) {
+            $tier = $c->getHighestUnlockedTier();
+            $conceptList .= ($i + 1) . ". {$c->title} [Tier: {$tier}]";
+            if (trim($c->explanation ?? '')) {
+                $conceptList .= " — {$c->explanation}";
+            }
+            $conceptList .= "\n";
+        }
+
+        $domainContext = "Domain: {$domain->name}\n";
+        if ($domain->description) {
+            $domainContext .= "Domain Description: {$domain->description}\n";
+        }
+
+        $dedupSection = $this->buildQuizDedupSection($concepts);
+
+        return <<<PROMPT
+{$domainContext}
+Concepts to cover:
+{$conceptList}
+
+Generate {$questionCount} interview questions that test understanding of these concepts within the context of {$domain->name}. Mix the questions across concepts evenly. For each question, set the "concept" field to the EXACT concept title from the list above.
+{$dedupSection}
+PROMPT;
+    }
+
+    protected function buildQuizDedupSection(iterable $concepts): string
+    {
+        $allQuestions = [];
+        $limit = 10;
+
+        foreach ($concepts as $concept) {
+            $questions = $concept->generatedQuestions()
+                ->orderBy('id', 'desc')
+                ->limit($limit)
+                ->pluck('question')
+                ->toArray();
+            $allQuestions = array_merge($allQuestions, $questions);
+        }
+
+        $allQuestions = array_unique($allQuestions);
+
+        if (empty($allQuestions)) {
+            return '';
+        }
+
+        $list = implode("\n", array_map(fn ($q) => "- {$q}", $allQuestions));
+
+        return "\nPreviously generated questions — DO NOT repeat or rephrase these:\n{$list}\n";
+    }
+
+    public function buildQuizMessages(Domain $domain, iterable $concepts, int $questionCount): array
+    {
+        return [
+            ['role' => 'system', 'content' => $this->buildQuizSystemPrompt($questionCount)],
+            ['role' => 'user', 'content' => $this->buildQuizUserPrompt($domain, $concepts, $questionCount)],
         ];
     }
 }

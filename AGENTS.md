@@ -49,8 +49,18 @@ The `users` table contains profile fields for personalized AI prompts:
 - `interview_goal` (InterviewGoal enum)
 - `onboarding_completed` (boolean, default: false)
 
-### Onboarding Middleware
-New users with `onboarding_completed = false` are redirected to `/onboarding` before accessing any app features. The middleware is applied to the dashboard and all protected routes.
+### Middleware
+- **EnsureOnboardingCompleted** (`onboarding`): Redirects new users with `onboarding_completed = false` to `/onboarding`.
+- **EnsureNoActiveQuiz** (`active-quiz`): Redirects users back to their active (`in_progress`) quiz if they try to navigate to other app pages. Excludes `quizzes.active`, `quizzes.submit`, and `quizzes.results` routes. Applied to dashboard and all protected routes.
+
+### Enums
+- `quiz_status`: `in_progress`, `submitted` — backed by `App\Enums\QuizStatus`
+- `difficulty`: `junior`, `mid`, `senior` — backed by `App\Enums\Difficulty`
+- `status`: `to_review`, `in_progress`, `mastered` — backed by `App\Enums\Status`
+- `user_status`: `student`, `professional` — backed by `App\Enums\UserStatus`
+- `specialization`: `backend`, `frontend`, `fullstack`, `devops`, `data`, `student` — backed by `App\Enums\Specialization`
+- `experience_level`: `0`, `0-1`, `1-3`, `3-5`, `5-10`, `10+` — backed by `App\Enums\ExperienceLevel`
+- `interview_goal`: `first_job`, `career_switch`, `promotion`, `stay_sharp`, `job_hunting` — backed by `App\Enums\InterviewGoal`
 
 ## 🧠 5. AI Agent Workflow Rules
 When asked to build a feature, you MUST follow this exact sequence:

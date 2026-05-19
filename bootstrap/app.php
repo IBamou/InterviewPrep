@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'onboarding' => \App\Http\Middleware\EnsureOnboardingCompleted::class,
+            'active-quiz' => \App\Http\Middleware\EnsureNoActiveQuiz::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
