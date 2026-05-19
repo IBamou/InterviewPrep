@@ -7,7 +7,6 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SearchController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -56,16 +55,19 @@ Route::middleware(['auth', 'onboarding', 'active-quiz'])->group(function () {
     Route::patch('/concepts/{concept}/status', [ConceptController::class, 'updateStatus'])->name('concepts.status');
     Route::get('/domains/{domain}/concepts/archives', [ConceptController::class, 'archives'])->name('concepts.archives');
 
-    Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
+    Route::get('/quizzes', [QuizController::class, 'index'])->name('quizzes.index');
     Route::post('/quizzes', [QuizController::class, 'store'])->name('quizzes.store')->middleware('throttle:ai-actions');
     Route::get('/quizzes/history', [QuizController::class, 'history'])->name('quizzes.history');
     Route::get('/quizzes/{quiz}/results', [QuizController::class, 'results'])->name('quizzes.results');
-    Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quizzes.submit')->middleware('throttle:ai-actions');
+    Route::match(['PUT', 'PATCH'], '/quizzes/{quiz}', [QuizController::class, 'update'])->name('quizzes.update')->middleware('throttle:ai-actions');
     Route::get('/quizzes/{domain}', [QuizController::class, 'byDomain'])->name('quizzes.byDomain')->whereNumber('domain');
+    Route::get('/quizzes/{domain}/history', [QuizController::class, 'domainHistory'])->name('quizzes.domain-history')->whereNumber('domain');
     Route::get('/quizzes/{domain}/{quiz}/active-quiz', [QuizController::class, 'active'])->name('quizzes.active')->scopeBindings();
+    Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/interview', [ProfileController::class, 'updateInterview'])->name('profile.interview');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

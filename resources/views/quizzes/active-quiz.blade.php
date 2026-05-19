@@ -2,7 +2,7 @@
     <x-slot:topbar-actions></x-slot:topbar-actions>
 
     <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
-        <a class="hover:text-primary transition-colors" href="{{ route('quizzes.create') }}">Quizzes</a>
+        <a class="hover:text-primary transition-colors" href="{{ route('quizzes.index') }}">Quizzes</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <a class="hover:text-primary transition-colors" href="{{ route('quizzes.byDomain', $quiz->domain_id) }}">{{ $domainName }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -20,7 +20,7 @@
     </div>
     @endif
 
-    <div x-data="quizTimer({{ $quiz->time_limit_minutes }}, {{ $quiz->started_at?->timestamp ?? now()->timestamp }}, {{ $timeExpired ? 'true' : 'false' }})" x-init="initTimer()">
+    <div x-data="quizTimer({{ $quiz->time_limit_minutes }}, {{ $quiz->started_at?->timestamp ?? now()->timestamp }}, {{ json_encode($timeExpired) }})" x-init="initTimer()">
 
         @if ($timeExpired)
         <div class="mb-4 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[13px] text-amber-800 flex items-center gap-2">
@@ -35,13 +35,12 @@
                     <span class="material-symbols-outlined text-error text-[28px]">timer_off</span>
                 </div>
                 <h3 class="text-[16px] font-semibold text-on-surface mb-1">Time's Up!</h3>
-                <p class="text-[13px] text-on-surface-variant/70 mb-5">Your quiz time has expired. Submitting your answers now...</p>
+                <p class="text-[13px] text-on-surface-variant/70 mb-5">Your quiz time has expired. Redirecting to results...</p>
                 <div class="flex justify-center">
                     <span class="material-symbols-outlined text-primary animate-spin text-[24px]">progress_activity</span>
                     </div>
                 </div>
             </div>
-        </div>
 
         <div class="flex items-center justify-between mb-6">
             <div>
@@ -58,7 +57,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('quizzes.submit', $quiz) }}"
+        <form id="quiz-form" method="POST" action="{{ route('quizzes.update', $quiz) }}"
               x-data="{
                 current: 0,
                 answers: {},
@@ -103,9 +102,10 @@
                 },
                 submitQuiz() {
                     const filled = Object.values(this.answers).filter(a => a?.trim()).length;
-                    if (filled === 0) {
-                        this.confirmTitle = 'No Answers';
-                        this.confirmMessage = 'Please answer at least one question before submitting.';
+                    const minRequired = Math.max(Math.ceil(this.total / 3), 1);
+                    if (filled < minRequired) {
+                        this.confirmTitle = 'Not Enough Answers';
+                        this.confirmMessage = 'You must answer at least ' + minRequired + ' of ' + this.total + ' questions before submitting.';
                         this.confirmVariant = 'danger';
                         this.confirmAction = null;
                         this.showConfirm = true;
@@ -113,9 +113,23 @@
                     }
                     this.clearDraft();
                     this.confirmTitle = 'Submit Quiz';
-                    this.confirmMessage = filled === this.total ? 'Submit your quiz for AI evaluation?' : 'Are you sure you want to submit your quiz? Unanswered questions will be scored 0.';
+                    this.confirmMessage = 'Submit your quiz for AI evaluation? Unanswered questions will be scored 0.';
                     this.confirmVariant = 'success';
-                    this.confirmAction = () => this.$el.submit();
+                    this.confirmAction = () => {
+                        document.getElementById('mode-input').value = 'submit';
+                        document.getElementById('quiz-form').submit();
+                    };
+                    this.showConfirm = true;
+                },
+                endQuiz() {
+                    this.clearDraft();
+                    this.confirmTitle = 'End Quiz';
+                    this.confirmMessage = 'End the quiz now? Your progress will be saved but answers will NOT be evaluated by AI.';
+                    this.confirmVariant = 'danger';
+                    this.confirmAction = () => {
+                        document.getElementById('mode-input').value = 'end';
+                        document.getElementById('quiz-form').submit();
+                    };
                     this.showConfirm = true;
                 },
                 closeConfirm() {
@@ -126,13 +140,15 @@
                     const action = this.confirmAction;
                     this.showConfirm = false;
                     this.confirmAction = null;
-                    if (action) action();
+                    if (typeof action === 'function') action();
                 }
               }"
               @keydown.left.prevent="if ($event.target.tagName !== 'TEXTAREA' && !isFirst) prev()"
               @keydown.right.prevent="if ($event.target.tagName !== 'TEXTAREA' && !isLast) next()">
 
             @csrf
+            @method('PATCH')
+            <input type="hidden" name="mode" id="mode-input" value="">
             <div x-show="draftRestored" x-cloak x-transition
                  class="mb-4 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800 flex items-center gap-2">
                 <span class="material-symbols-outlined text-[16px]">restore</span>
@@ -158,7 +174,7 @@
                             <span class="w-3 h-3 rounded bg-primary/10"></span> Answered
                             <span class="w-3 h-3 rounded bg-surface-container"></span> Unanswered
                         </div>
-                        <button type="button" @click="submitQuiz"
+                        <button type="button" @click="endQuiz"
                                 class="mt-4 w-full px-3 py-2 border border-error/30 text-error rounded-lg text-[11px] font-medium hover:bg-error/5 transition-all flex items-center justify-center gap-1.5">
                             <span class="material-symbols-outlined text-[14px]">logout</span>
                             End Quiz
@@ -177,7 +193,7 @@
                             <div class="flex items-center gap-3">
                                 <span class="w-7 h-7 rounded-full bg-primary/10 text-primary text-[12px] font-semibold flex items-center justify-center shrink-0">{{ $loop->iteration }}</span>
                                 <div>
-                                    <p class="text-[11px] text-on-surface-variant/50 font-medium">{{ $q->concept->title }}</p>
+                                    <p class="text-[11px] text-on-surface-variant/50 font-medium">{{ $q->concept?->title ?? 'Concept' }}</p>
                                     <p class="text-[14px] font-medium text-on-surface mt-0.5">{{ $q->question }}</p>
                                 </div>
                             </div>
@@ -190,14 +206,7 @@
                                       class="w-full rounded-xl border border-outline-variant/60 text-[12px] p-3 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all resize-y placeholder:text-on-surface-variant/30 font-mono"
                                        placeholder="Write your answer..."></textarea>
                             <input type="hidden" :name="'ratings[' + {{ $index }} + ']'" value="3">
-                            <p x-show="timeLeft > 60" class="text-[13px] text-primary font-semibold mt-2 flex items-center justify-center gap-1">
-                                <span class="material-symbols-outlined text-[16px]">info</span>
-                                Auto-submits when timer expires
-                            </p>
-                            <p x-show="timeLeft <= 60" x-cloak class="text-[13px] text-error font-semibold mt-2 flex items-center justify-center gap-1">
-                                <span class="material-symbols-outlined text-[16px]">warning</span>
-                                Auto-submitting when timer hits 0
-                            </p>
+                            <p class="text-[11px] mt-2 text-center font-semibold flex items-center justify-center gap-1" :style="'color: ' + (timeLeft < 300 ? '#E63946' : '#0077b6')"><span class="material-symbols-outlined text-[14px]">info</span> Answers are auto-submitted when time expires.</p>
                         </div>
                     </section>
                     @endforeach
@@ -243,8 +252,8 @@
                     </div>
                     <p class="text-[13px] text-on-surface-variant/70 mb-5" x-text="confirmMessage"></p>
                     <div class="flex gap-2 justify-end">
-                        <button type="button" @click="closeConfirm" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">Cancel</button>
-                        <button type="button" @click="doConfirm"
+                        <button type="button" @click="closeConfirm()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">Cancel</button>
+                        <button type="button" @click="doConfirm()"
                                 class="px-4 py-2 text-white rounded-lg text-[13px] font-medium transition-all"
                                 :class="confirmVariant === 'success' ? 'bg-primary hover:bg-primary/90' : 'bg-error hover:bg-error/90'"
                                 x-text="confirmVariant === 'success' ? 'Submit' : 'OK'"></button>
@@ -282,7 +291,7 @@
                     }
                 }, 1000);
                 this.keepAliveInterval = setInterval(() => {
-                    fetch('/keep-alive').catch(() => {});
+                    fetch('{{ route('keep-alive') }}').catch(() => {});
                 }, 300000);
             },
             expire() {
@@ -292,15 +301,10 @@
                 localStorage.removeItem('quiz_draft_{{ $quiz->id }}');
                 this.timesUp = true;
                 setTimeout(() => {
-                    const form = document.querySelector('form');
-                    if (!form) { this.submitting = false; return; }
-                    const formData = new FormData(form);
-                    fetch(form.action, { method: 'POST', body: formData })
-                        .then(() => window.location.reload())
-                        .catch(() => {
-                            this.submitting = false;
-                            this.timesUp = false;
-                        });
+                    const modeInput = document.getElementById('mode-input');
+                    if (modeInput) modeInput.value = 'timeup';
+                    const form = document.getElementById('quiz-form');
+                    if (form) form.submit();
                 }, 2500);
             },
             get formattedTime() {

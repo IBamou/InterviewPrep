@@ -46,18 +46,19 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $allUserConcepts = Concept::whereIn('domain_id', $domainIds)->get(['practice_streak', 'practice_sessions']);
+        $today = now()->toDateString();
         $longestStreak = 0;
         $todayPracticed = false;
-        $today = now()->toDateString();
-        foreach ($allUserConcepts as $c) {
+        foreach (Concept::whereIn('domain_id', $domainIds)->cursor(['practice_streak', 'practice_sessions']) as $c) {
             $streak = $c->practice_streak ?? [];
             $longestStreak = max($longestStreak, $streak['longest'] ?? 0);
-            $sessions = $c->practice_sessions ?? [];
-            foreach ($sessions as $s) {
-                if (($s['date'] ?? null) === $today) {
-                    $todayPracticed = true;
-                    break;
+            if (!$todayPracticed) {
+                $sessions = $c->practice_sessions ?? [];
+                foreach ($sessions as $s) {
+                    if (($s['date'] ?? null) === $today) {
+                        $todayPracticed = true;
+                        break;
+                    }
                 }
             }
         }

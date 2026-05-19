@@ -1,37 +1,27 @@
-<x-app-layout activeNav="quizzes" title="Quiz History">
+<x-app-layout activeNav="quizzes" title="{{ $domain->name }} Quiz History">
     <x-slot:topbar-actions>
-        <a href="{{ route('quizzes.index') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">+ New Quiz</a>
+        <a href="{{ route('quizzes.byDomain', $domain) }}" class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">Back to Domain</a>
     </x-slot:topbar-actions>
 
     <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
         <a class="hover:text-primary transition-colors" href="{{ route('quizzes.index') }}">Quizzes</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <a class="hover:text-primary transition-colors" href="{{ route('quizzes.byDomain', $domain) }}">{{ $domain->name }}</a>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <span class="text-on-surface font-medium">History</span>
     </nav>
 
     <div class="mb-6">
-        <h2 class="font-display-lg text-display-lg text-on-surface">Quiz History</h2>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Review your past quiz attempts and results.</p>
-    </div>
-
-    <div class="mb-4">
-        <form method="GET" action="{{ route('quizzes.history') }}">
-            <div class="flex items-center gap-2">
-                <select name="status" onchange="this.form.submit()" class="rounded-lg border border-outline-variant/60 text-[13px] px-3 py-1.5 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none">
-                    <option value="">All</option>
-                    <option value="{{ \App\Enums\QuizStatus::InProgress->value }}" {{ request('status') === \App\Enums\QuizStatus::InProgress->value ? 'selected' : '' }}>In Progress</option>
-                    <option value="{{ \App\Enums\QuizStatus::Submitted->value }}" {{ request('status') === \App\Enums\QuizStatus::Submitted->value ? 'selected' : '' }}>Submitted</option>
-                </select>
-            </div>
-        </form>
+        <h2 class="font-display-lg text-display-lg text-on-surface">{{ $domain->name }} History</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Review past quiz attempts for this domain.</p>
     </div>
 
     @if ($quizzes->isEmpty())
     <div class="bg-white border border-outline-variant/50 rounded-xl p-8 text-center">
         <span class="material-symbols-outlined text-on-surface-variant/30 text-[48px] mb-3">history</span>
-        <h3 class="text-[16px] font-semibold text-on-surface mb-1">No quizzes found</h3>
-        <p class="text-[13px] text-on-surface-variant/60 mb-4">Take your first quiz to see results here.</p>
-        <a href="{{ route('quizzes.index') }}" class="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all inline-flex items-center gap-1.5">
+        <h3 class="text-[16px] font-semibold text-on-surface mb-1">No quizzes yet</h3>
+        <p class="text-[13px] text-on-surface-variant/60 mb-4">Take your first quiz for this domain to see results here.</p>
+        <a href="{{ route('quizzes.byDomain', $domain) }}" class="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all inline-flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[16px]">add</span>
             Start a Quiz
         </a>
@@ -46,8 +36,7 @@
                         <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">quiz</span>
                     </div>
                     <div>
-                        <h3 class="text-[14px] font-semibold text-on-surface">{{ $q->domain?->name ?? 'Deleted Domain' }}</h3>
-                        <div class="flex items-center gap-2 text-[11px] text-on-surface-variant/60 mt-0.5">
+                        <div class="flex items-center gap-2 text-[11px] text-on-surface-variant/60">
                             <span>{{ $q->created_at->format('M j, Y g:i A') }}</span>
                             <span>&middot;</span>
                             <span>{{ $q->questions_count }} questions</span>
@@ -65,7 +54,7 @@
                     <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-600">In Progress</span>
                     @endif
                     @if ($q->status->value === 'in_progress')
-                    <a href="{{ route('quizzes.active', ['domain' => $q->domain_id, 'quiz' => $q]) }}" class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-lg text-[12px] font-medium hover:bg-surface-container transition-all">
+                    <a href="{{ route('quizzes.active', ['domain' => $domain, 'quiz' => $q]) }}" class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-lg text-[12px] font-medium hover:bg-surface-container transition-all">
                         Continue
                     </a>
                     @else

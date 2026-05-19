@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\QuizStatus;
 use App\Http\Requests\StoreQuizRequest;
-use App\Http\Requests\SubmitQuizRequest;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\Quiz;
@@ -23,46 +22,36 @@ class QuizController extends Controller
         $this->groq = $groq;
     }
 
-    public function create()
+    public function index()
     {
         $domains = Auth::user()->domains()->with('concepts')->get();
 
         $domains = $domains->map(function ($domain) {
-            $domain->allConcepts = $domain->concepts->map(function ($c) {
-                $c->quizStatus = $c->getQuizStatus();
-                $c->quizMessage = $c->getQuizMessage();
-                return $c;
-            });
-            $domain->quizReadyConcepts = $domain->allConcepts->filter(fn ($c) => $c->quizStatus === 'ready');
-            $domain->quizReadyCount = $domain->quizReadyConcepts->count();
-            $domain->totalConcepts = $domain->concepts->count();
-            $domain->canQuiz = $domain->quizReadyCount >= (config('quiz.domain.min_ready_concepts') ?? 3);
+            $domain = $this->loadDomainQuizData($domain);
+            $domain->quotaRemaining = $this->getQuotaRemaining($domain);
             return $domain;
         });
 
-        return view('quizzes.create', compact('domains'));
+        $quotaLimit = config('quiz.quota.per_domain_per_day');
+
+        return view('quizzes.index', compact('domains', 'quotaLimit'));
     }
 
     public function store(StoreQuizRequest $request)
     {
-        $domain = Domain::findOrFail($request->domain_id);
+        $domain = $request->user()->domains()->findOrFail($request->domain_id);
         $conceptIds = $request->concept_ids;
         $concepts = Concept::whereIn('id', $conceptIds)->get();
 
-        $questionCount = min(max(count($concepts) * (config('quiz.questions.per_concept') ?? 3), config('quiz.questions.min_per_quiz') ?? 10), config('quiz.questions.max_per_quiz') ?? 15);
-        $timeLimit = max(round($questionCount * (config('quiz.timer.minutes_per_question') ?? 1.5)), config('quiz.timer.min_minutes') ?? 10);
+        $questionCount = min(max(count($concepts) * config('quiz.questions.per_concept'), config('quiz.questions.min_per_quiz')), config('quiz.questions.max_per_quiz'));
+        $timeLimit = max(round($questionCount * config('quiz.timer.minutes_per_question')), config('quiz.timer.min_minutes'));
 
-        try {
-            $questions = $this->groq->generateQuizQuestions($domain, $concepts);
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to generate quiz questions. Please try again.');
-        }
+        $questions = $this->groq->generateQuizQuestions($domain, $concepts, $questionCount);
 
-        $quiz = DB::transaction(function () use ($domain, $concepts, $questions, $questionCount, $timeLimit) {
+        $quiz = DB::transaction(function () use ($domain, $timeLimit, $questions, $concepts) {
             $quiz = Auth::user()->quizzes()->create([
                 'domain_id' => $domain->id,
                 'time_limit_minutes' => $timeLimit,
-                'started_at' => now(),
                 'status' => QuizStatus::InProgress,
             ]);
 
@@ -78,16 +67,46 @@ class QuizController extends Controller
                 ]);
             }
 
+            $quiz->update(['started_at' => now()]);
+
             return $quiz;
         });
 
         session(['quiz_domain_' . $quiz->id => $domain->name]);
-        session()->flash('quiz_created', true);
 
         return redirect()->route('quizzes.active', ['domain' => $domain, 'quiz' => $quiz]);
     }
 
+    public function destroy(Quiz $quiz)
+    {
+        if ($quiz->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $domain = $quiz->domain;
+
+        $quiz->delete();
+
+        return redirect()->route('quizzes.byDomain', $domain);
+    }
+
     public function byDomain(Domain $domain)
+    {
+        if ($domain->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $domain->load('concepts');
+
+        $this->loadDomainQuizData($domain, withAvgRating: true);
+
+        $quotaRemaining = $this->getQuotaRemaining($domain);
+        $quotaLimit = config('quiz.quota.per_domain_per_day');
+
+        return view('quizzes.by-domain', compact('domain', 'quotaRemaining', 'quotaLimit'));
+    }
+
+    public function domainHistory(Domain $domain)
     {
         if ($domain->user_id !== Auth::id()) {
             abort(403);
@@ -100,7 +119,7 @@ class QuizController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('quizzes.by-domain', compact('domain', 'quizzes'));
+        return view('quizzes.domain-history', compact('domain', 'quizzes'));
     }
 
     public function active(Domain $domain, Quiz $quiz)
@@ -121,81 +140,87 @@ class QuizController extends Controller
         return view('quizzes.active-quiz', compact('quiz', 'domain', 'domainName', 'timeExpired'));
     }
 
-    public function submit(SubmitQuizRequest $request, Quiz $quiz)
+    public function update(Request $request, Quiz $quiz)
     {
         if ($quiz->user_id !== Auth::id()) {
             abort(403);
         }
 
-        if ($quiz->status === QuizStatus::Submitted) {
+        if ($quiz->status !== QuizStatus::InProgress) {
             return redirect()->route('quizzes.results', $quiz);
         }
 
-        $questions = $quiz->questions()->with('concept')->orderBy('sort_order')->get();
-        $maxScore = $questions->count() * 5;
+        $mode = $request->input('mode');
+        $answers = $request->input('answers', []);
 
-        $grouped = $questions->groupBy(fn ($q) => $q->concept_id);
+        return match ($mode) {
+            'submit' => $this->handleSubmit($quiz, $answers),
+            'timeup' => $this->handleTimeup($quiz, $answers),
+            'end'    => $this->handleEnd($quiz, $answers),
+            default  => back()->with('error', 'Invalid completion mode.'),
+        };
+    }
 
-        $evaluationsByQuestion = collect();
+    private function handleSubmit(Quiz $quiz, array $answers)
+    {
+        $totalQuestions = $quiz->questions()->count();
+        $answeredCount = collect($answers)->filter(fn ($a) => trim($a ?? ''))->count();
 
-        foreach ($grouped as $conceptQuestions) {
-            $concept = $conceptQuestions->first()->concept;
-            if (!$concept) continue;
+        $minRequired = max(ceil($totalQuestions / 3), 1);
 
-            $qaPairs = [];
-            foreach ($conceptQuestions as $q) {
-                $qaPairs[] = [
-                    'question_id' => $q->id,
-                    'question' => $q->question,
-                    'answer' => $request->validated()['answers'][$q->sort_order] ?? '',
-                ];
-            }
-
-            $evaluations = [];
-            try {
-                $evaluations = $this->groq->evaluateAnswers($concept, $qaPairs);
-            } catch (\Exception $e) {
-                Log::warning('Quiz AI evaluation failed for concept #' . ($concept->id ?? '?') . ' in quiz #' . $quiz->id . ': ' . $e->getMessage());
-            }
-
-            foreach ($evaluations as $eval) {
-                $idx = $eval['question_index'] ?? null;
-                if ($idx !== null && isset($qaPairs[$idx])) {
-                    $evaluationsByQuestion->put($qaPairs[$idx]['question_id'], $eval);
-                }
-            }
+        if ($answeredCount < $minRequired) {
+            return back()->with('error', "You must answer at least {$minRequired} of {$totalQuestions} questions before submitting.");
         }
 
-        DB::transaction(function () use ($questions, $request, $evaluationsByQuestion, $maxScore, $quiz) {
-            $totalScore = 0;
+        $this->evaluateAndSubmitQuiz($quiz, $answers);
+        $quiz->update(['passed' => true]);
 
-            foreach ($questions as $q) {
-                $eval = $evaluationsByQuestion->get($q->id);
+        return redirect()->route('quizzes.results', $quiz);
+    }
 
-                if ($eval) {
-                    $rating = $eval['rating'] ?? 1;
-                    $update = [
-                        'answer' => $request->answers[$q->sort_order] ?? '',
-                        'rating' => $rating,
-                        'feedback' => $eval['feedback'] ?? null,
-                        'model_answer' => $eval['model_answer'] ?? null,
-                    ];
-                } else {
-                    $rating = $request->ratings[$q->sort_order] ?? 1;
-                    $update = [
-                        'answer' => $request->answers[$q->sort_order] ?? '',
-                        'rating' => $rating,
-                        'feedback' => 'Evaluation unavailable.',
-                        'model_answer' => null,
-                    ];
-                }
+    private function handleTimeup(Quiz $quiz, array $answers)
+    {
+        $hasAnswers = collect($answers)->filter(fn ($a) => trim($a ?? ''))->isNotEmpty();
 
-                $q->update($update);
-                $totalScore += $rating;
+        if ($hasAnswers) {
+            $this->evaluateAndSubmitQuiz($quiz, $answers);
+            $quiz->update(['passed' => true]);
+        } else {
+            DB::transaction(function () use ($quiz) {
+                $maxScore = $quiz->questions()->count() * config('quiz.scoring.max_per_question');
+
+                $quiz->update([
+                    'total_score' => 0,
+                    'max_score' => $maxScore,
+                    'submitted_at' => now(),
+                    'status' => QuizStatus::Submitted,
+                    'passed' => true,
+                ]);
+            });
+        }
+
+        return redirect()->route('quizzes.results', $quiz);
+    }
+
+    private function handleEnd(Quiz $quiz, array $answers)
+    {
+        $domainId = $quiz->domain_id;
+
+        DB::transaction(function () use ($quiz, $answers) {
+            foreach ($quiz->questions()->orderBy('sort_order')->get() as $q) {
+                $answerText = $answers[$q->sort_order] ?? '';
+                $q->update([
+                    'answer' => $answerText,
+                    'rating' => 0,
+                    'feedback' => 'Quiz ended early — no AI evaluation.',
+                    'model_answer' => null,
+                ]);
             }
 
+            $maxScore = $quiz->questions()->count() * config('quiz.scoring.max_per_question');
+
             $quiz->update([
-                'total_score' => $totalScore,
+                'total_score' => 0,
                 'max_score' => $maxScore,
                 'submitted_at' => now(),
                 'status' => QuizStatus::Submitted,
@@ -203,7 +228,108 @@ class QuizController extends Controller
             ]);
         });
 
-        return redirect()->route('quizzes.results', $quiz);
+        $domain = Domain::withTrashed()->find($domainId);
+
+        if ($domain) {
+            return redirect()->route('quizzes.byDomain', $domain);
+        }
+
+        return redirect()->route('quizzes.index');
+    }
+
+    private function evaluateAndSubmitQuiz(Quiz $quiz, array $answers): void
+    {
+        $questions = $quiz->questions()->with('concept')->orderBy('sort_order')->get();
+        $maxScore = $questions->count() * config('quiz.scoring.max_per_question');
+
+        $grouped = $questions->groupBy(fn ($q) => $q->concept_id);
+        $batches = [];
+
+        foreach ($grouped as $conceptQuestions) {
+            $concept = $conceptQuestions->first()->concept;
+            if (!$concept) continue;
+
+            $qaPairs = [];
+            foreach ($conceptQuestions as $q) {
+                $answerText = $answers[$q->sort_order] ?? '';
+                if (trim($answerText)) {
+                    $qaPairs[] = [
+                        'question_id' => $q->id,
+                        'question' => $q->question,
+                        'answer' => $answerText,
+                    ];
+                }
+            }
+
+            if (!empty($qaPairs)) {
+                $batches[] = [
+                    'concept' => $concept,
+                    'qa_pairs' => $qaPairs,
+                ];
+            }
+        }
+
+        $evaluationsByQuestion = collect();
+        if (!empty($batches)) {
+            try {
+                $results = $this->groq->evaluateAnswersBatch($batches);
+                foreach ($results as $questionId => $eval) {
+                    $evaluationsByQuestion->put($questionId, $eval);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Quiz AI batch evaluation failed for quiz #' . $quiz->id . ': ' . $e->getMessage());
+            }
+        }
+
+        DB::transaction(function () use ($questions, $answers, $evaluationsByQuestion, $maxScore, $quiz) {
+            $totalScore = 0;
+
+            foreach ($questions as $q) {
+                $answerText = $answers[$q->sort_order] ?? '';
+
+                if (trim($answerText)) {
+                    $eval = $evaluationsByQuestion->get($q->id);
+
+                    if ($eval) {
+                        $rating = $eval['rating'] ?? 1;
+                        $update = [
+                            'answer' => $answerText,
+                            'rating' => $rating,
+                            'feedback' => $eval['feedback'] ?? null,
+                            'model_answer' => $eval['model_answer'] ?? null,
+                        ];
+                    } else {
+                        $update = [
+                            'answer' => $answerText,
+                            'rating' => 1,
+                            'feedback' => 'Evaluation unavailable.',
+                            'model_answer' => null,
+                        ];
+                    }
+
+                    $totalScore += $update['rating'];
+                } else {
+                    $update = [
+                        'answer' => '',
+                        'rating' => 0,
+                        'feedback' => 'Not answered.',
+                        'model_answer' => null,
+                    ];
+                }
+
+                $q->update($update);
+            }
+
+            $percentage = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+
+            $quiz->update([
+                'total_score' => $totalScore,
+                'max_score' => $maxScore,
+                'submitted_at' => now(),
+                'status' => QuizStatus::Submitted,
+                'passed' => $percentage >= config('quiz.passing_threshold'),
+            ]);
+        });
     }
 
     public function results(Quiz $quiz)
@@ -231,5 +357,33 @@ class QuizController extends Controller
         $quizzes = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         return view('quizzes.history', compact('quizzes'));
+    }
+
+    private function loadDomainQuizData(Domain $domain, bool $withAvgRating = false): Domain
+    {
+        $domain->allConcepts = $domain->concepts->map(function ($c) use ($withAvgRating) {
+            $c->quizStatus = $c->getQuizStatus();
+            $c->quizMessage = $c->getQuizMessage();
+            if ($withAvgRating) {
+                $c->avgRating = $c->getGlobalAvgRating();
+            }
+            return $c;
+        });
+        $domain->quizReadyConcepts = $domain->allConcepts->filter(fn ($c) => $c->quizStatus === 'ready');
+        $domain->quizReadyCount = $domain->quizReadyConcepts->count();
+        $domain->totalConcepts = $domain->concepts->count();
+        $domain->canQuiz = $domain->quizReadyCount >= config('quiz.domain.min_ready_concepts');
+        return $domain;
+    }
+
+    private function getQuotaRemaining(Domain $domain): int
+    {
+        $quota = config('quiz.quota.per_domain_per_day');
+        $recentCount = Auth::user()->quizzes()
+            ->where('domain_id', $domain->id)
+            ->where('created_at', '>=', now()->subHours(24))
+            ->count();
+
+        return max(0, $quota - $recentCount);
     }
 }

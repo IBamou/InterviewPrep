@@ -12,6 +12,14 @@ class GeneratedQuestion extends Model
 
     protected $fillable = ['concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'set_number', 'tier'];
 
+    protected function casts(): array
+    {
+        return [
+            'rating' => 'integer',
+            'set_number' => 'integer',
+        ];
+    }
+
     public function concept(): BelongsTo
     {
         return $this->belongsTo(Concept::class);

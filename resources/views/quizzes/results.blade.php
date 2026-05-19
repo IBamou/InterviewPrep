@@ -1,11 +1,10 @@
 <x-app-layout activeNav="quizzes" title="Quiz Results: {{ $domainName }}">
     <x-slot:topbar-actions>
-        <a href="{{ route('quizzes.history') }}" class="px-3 py-1.5 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">History</a>
-        <a href="{{ route('quizzes.create') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">New Quiz</a>
+        <a href="{{ route('quizzes.index') }}" class="px-3 py-1.5 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all">New Quiz</a>
     </x-slot:topbar-actions>
 
     <nav class="flex items-center gap-1.5 text-[12px] text-on-surface-variant/60 mb-4">
-        <a class="hover:text-primary transition-colors" href="{{ route('quizzes.create') }}">Quizzes</a>
+        <a class="hover:text-primary transition-colors" href="{{ route('quizzes.index') }}">Quizzes</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <a class="hover:text-primary transition-colors" href="{{ route('quizzes.byDomain', $quiz->domain_id) }}">{{ $domainName }}</a>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -51,7 +50,7 @@
                             <p class="text-[13px] font-medium text-on-surface truncate">{{ $q->question }}</p>
                         </div>
                         <div class="flex items-center gap-2 ml-2 shrink-0">
-                            <span class="text-[11px] text-on-surface-variant/50">{{ $q->concept->title }}</span>
+                            <span class="text-[11px] text-on-surface-variant/50">{{ $q->concept?->title ?? 'Concept' }}</span>
                             @if ($q->rating)
                             <div class="flex gap-0.5">
                                 @for ($i = 1; $i <= 5; $i++)

@@ -15,50 +15,48 @@
 </div>
 
 <script>
-var confirmCallback = null;
-function showConfirmModal(title, message, callback, variant = 'danger') {
-    const modal = document.getElementById('confirm-modal');
-    const dialog = document.getElementById('confirm-dialog');
-    const titleEl = document.getElementById('confirm-title');
-    const msgEl = document.getElementById('confirm-message');
-    const actionBtn = document.getElementById('confirm-action');
-    const iconEl = document.getElementById('confirm-icon');
-
-    titleEl.textContent = title;
-    msgEl.textContent = message;
-    confirmCallback = callback;
-
-    if (variant === 'success') {
-        actionBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all';
-        iconEl.className = 'w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0';
-        iconEl.innerHTML = '<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>';
-    } else {
-        actionBtn.className = 'px-4 py-2 bg-error text-white rounded-lg text-[13px] font-medium hover:bg-error/90 transition-all';
-        iconEl.className = 'w-10 h-10 rounded-full bg-error/10 flex items-center justify-center shrink-0';
-        iconEl.innerHTML = '<span class="material-symbols-outlined text-error text-[20px]">warning</span>';
-    }
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    requestAnimationFrame(() => {
-        dialog.classList.remove('scale-95', 'opacity-0');
-        dialog.classList.add('scale-100', 'opacity-100');
+(function () {
+    var confirmCallback = null;
+    window.showConfirmModal = function (title, message, callback, variant) {
+        variant = variant || 'danger';
+        var modal = document.getElementById('confirm-modal'),
+            dialog = document.getElementById('confirm-dialog'),
+            titleEl = document.getElementById('confirm-title'),
+            msgEl = document.getElementById('confirm-message'),
+            actionBtn = document.getElementById('confirm-action'),
+            iconEl = document.getElementById('confirm-icon');
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        confirmCallback = callback;
+        if (variant === 'success') {
+            actionBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all';
+            iconEl.className = 'w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0';
+            iconEl.innerHTML = '<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>';
+        } else {
+            actionBtn.className = 'px-4 py-2 bg-error text-white rounded-lg text-[13px] font-medium hover:bg-error/90 transition-all';
+            iconEl.className = 'w-10 h-10 rounded-full bg-error/10 flex items-center justify-center shrink-0';
+            iconEl.innerHTML = '<span class="material-symbols-outlined text-error text-[20px]">warning</span>';
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        requestAnimationFrame(function () {
+            dialog.classList.remove('scale-95', 'opacity-0');
+            dialog.classList.add('scale-100', 'opacity-100');
+        });
+    };
+    window.closeConfirmModal = function () {
+        var modal = document.getElementById('confirm-modal'),
+            dialog = document.getElementById('confirm-dialog');
+        dialog.classList.remove('scale-100', 'opacity-100');
+        dialog.classList.add('scale-95', 'opacity-0');
+        setTimeout(function () {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            confirmCallback = null;
+        }, 200);
+    };
+    document.getElementById('confirm-modal').addEventListener('click', function (e) {
+        if (e.target === e.currentTarget) window.closeConfirmModal();
     });
-}
-
-function closeConfirmModal() {
-    const modal = document.getElementById('confirm-modal');
-    const dialog = document.getElementById('confirm-dialog');
-    dialog.classList.remove('scale-100', 'opacity-100');
-    dialog.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        confirmCallback = null;
-    }, 200);
-}
-
-document.getElementById('confirm-modal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeConfirmModal();
-});
+})();
 </script>

@@ -12,6 +12,14 @@ class QuizQuestion extends Model
 
     protected $fillable = ['quiz_id', 'concept_id', 'question', 'answer', 'rating', 'feedback', 'model_answer', 'sort_order'];
 
+    protected function casts(): array
+    {
+        return [
+            'rating' => 'integer',
+            'sort_order' => 'integer',
+        ];
+    }
+
     public function quiz(): BelongsTo
     {
         return $this->belongsTo(Quiz::class);

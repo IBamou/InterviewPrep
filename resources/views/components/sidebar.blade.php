@@ -20,6 +20,10 @@ Dashboard
 <span class="material-symbols-outlined text-[18px]">account_tree</span>
 Domains
 </a>
+<a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'quizzes' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('quizzes.index') }}">
+    <span class="material-symbols-outlined text-[18px]">quiz</span>
+    Quiz Mode
+</a>
 <a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'archives' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('domains.archives') }}">
 <span class="material-symbols-outlined text-[18px]">inventory_2</span>
 Archives
@@ -27,10 +31,6 @@ Archives
 <a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'search' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('search') }}">
     <span class="material-symbols-outlined text-[18px]">search</span>
     Search
-</a>
-<a class="relative flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] font-medium transition-all duration-150 {{ $activeNav === 'quizzes' ? 'text-primary bg-primary-fixed font-semibold' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container' }}" href="{{ route('quizzes.create') }}">
-    <span class="material-symbols-outlined text-[18px]">quiz</span>
-    Quiz Mode
 </a>
 </nav>
 <div class="px-3 pb-4 mt-auto">

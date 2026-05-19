@@ -18,7 +18,7 @@ class StoreQuizRequest extends FormRequest
     {
         return [
             'domain_id' => ['required', 'exists:domains,id'],
-            'concept_ids' => ['required', 'array', 'min:' . (config('quiz.domain.min_ready_concepts') ?? 3)],
+            'concept_ids' => ['required', 'array', 'min:' . max(config('quiz.domain.min_ready_concepts') ?? 3, 1)],
             'concept_ids.*' => ['required', 'exists:concepts,id'],
         ];
     }
@@ -32,10 +32,27 @@ class StoreQuizRequest extends FormRequest
                 return;
             }
 
-            foreach ($this->concept_ids as $id) {
-                $concept = Concept::find($id);
-                if (!$concept || $concept->domain_id !== $domain->id) {
-                    $validator->errors()->add('concept_ids', 'One or more concepts do not belong to this domain.');
+            $quota = config('quiz.quota.per_domain_per_day');
+            $recentCount = Auth::user()->quizzes()
+                ->where('domain_id', $domain->id)
+                ->where('created_at', '>=', now()->subHours(24))
+                ->count();
+
+            if ($recentCount >= $quota) {
+                $validator->errors()->add('domain_id', "Quiz limit reached for this domain (max {$quota} per 24 hours).");
+                return;
+            }
+
+            $concepts = Concept::whereIn('id', $this->concept_ids)->get();
+
+            if ($concepts->count() !== count($this->concept_ids)) {
+                $validator->errors()->add('concept_ids', 'One or more concepts do not exist.');
+                return;
+            }
+
+            foreach ($concepts as $concept) {
+                if ($concept->domain_id !== $domain->id) {
+                    $validator->errors()->add('concept_ids', "Concept \"{$concept->title}\" does not belong to this domain.");
                     return;
                 }
                 if (!$concept->isQuizReady()) {
