@@ -40,7 +40,7 @@ Validate concept titles before generation to catch typos, gibberish, or unrelate
 
 ### Services
 - `PromptBuilder::buildVerifyConceptTitleMessages()` builds prompts
-- `GroqService::verifyConceptTitle()` makes API call (low temperature 0.2, 100 max tokens)
+- `AiService::verifyConceptTitle()` makes API call (low temperature 0.2, 100 max tokens)
 
 ### Response Format
 - Valid: `{"valid": true}`

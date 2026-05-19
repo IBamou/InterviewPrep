@@ -36,7 +36,7 @@ Allow users to generate or improve concept explanations using AI.
 ### Services
 - `PromptBuilder::buildImproveConceptExplanationMessages()` for improve flow
 - `PromptBuilder::buildGenerateConceptExplanationMessages()` for generate flow
-- `GroqService::improveConceptExplanation()` and `GroqService::generateConceptExplanation()`
+- `AiService::improveConceptExplanation()` and `AiService::generateConceptExplanation()` (via `AiProvider`)
 
 ### Response Format
 - AI returns `{"improved_explanation": "..."}` or `{"explanation": "..."}`

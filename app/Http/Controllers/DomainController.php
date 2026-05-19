@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDomainRequest;
 use App\Http\Requests\UpdateDomainRequest;
 use App\Models\Domain;
-use App\Services\GroqService;
+use App\Services\AiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -109,12 +109,12 @@ class DomainController extends Controller
         return redirect()->route('domains.archives')->with('success', 'Domain permanently deleted.');
     }
 
-    public function improveDescription(Domain $domain, GroqService $groq)
+    public function improveDescription(Domain $domain, AiService $ai)
     {
         $this->authorize('update', $domain);
 
         try {
-            $suggestion = $groq->improveDomainDescription($domain);
+            $suggestion = $ai->improveDomainDescription($domain);
 
             return response()->json(['suggestion' => $suggestion]);
         } catch (\RuntimeException $e) {

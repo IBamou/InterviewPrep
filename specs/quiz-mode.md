@@ -13,7 +13,7 @@ Allow users to test their knowledge with timed, AI-generated mock interview quiz
   - Has an explanation written (if `requires_explanation` is true)
   - `min_evaluated_sets`+ practice sets completed with AI evaluation
   - Global average rating >= `min_avg_rating`
-- Questions are generated via Groq AI (12-15 per quiz, configurable)
+- Questions are generated via AI (12-15 per quiz, configurable)
 - Questions are saved to `quiz_questions` table before display
 
 ### US2 - Timed quiz with auto-submit
@@ -24,9 +24,9 @@ Allow users to test their knowledge with timed, AI-generated mock interview quiz
 - Keyboard navigation: Left/Right arrows to move between questions
 
 ### US3 - AI answer evaluation
-- On submission, each concept's answers are sent to Groq in batches for evaluation
+- On submission, each concept's answers are sent to the AI in batches for evaluation
 - Evaluation includes: rating (0-5), feedback, and model answer
-- If Groq fails, falls back to user self-rating with "Evaluation unavailable." feedback
+- If AI fails, falls back to user self-rating with "Evaluation unavailable." feedback
 - Results are persisted in `quiz_questions` table immediately
 
 ### US4 - Results & history
@@ -104,7 +104,7 @@ docs/quiz-configuration.md
 ```
 app/Models/User.php              → Add quizzes() HasMany relationship
 app/Models/Concept.php           → Add isQuizReady(), getQuizStatus(), getQuizMessage(), getEvaluatedSetCount()
-app/Services/GroqService.php     → Add generateQuizQuestions(), evaluateAnswers() (reuse existing)
+app/Services/AiService.php       → Add generateQuizQuestions(), evaluateAnswers() (via provider)
 app/Services/PromptBuilder.php   → Add buildQuizMessages()
 bootstrap/app.php                → Register 'active-quiz' middleware alias
 routes/web.php                   → Add quiz routes

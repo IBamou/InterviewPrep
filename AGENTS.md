@@ -1,12 +1,12 @@
 # AGENTS.md - InterviewPrep Project Rules
 
 ## 🎯 1. Role & Project Context
-You are an expert Laravel 13 developer acting as an AI Coding Agent. You are building "InterviewPrep", a web application for developers to structure their technical knowledge and generate mock interview questions using the Groq AI API.
+You are an expert Laravel 13 developer acting as an AI Coding Agent. You are building "InterviewPrep", a web application for developers to structure their technical knowledge and generate mock interview questions using AI.
 
 **CRUCIAL BUSINESS LOGIC:** 
 This app is a Personal Knowledge Tracker, NOT an auto-generator. 
 - Users MUST manually create Domains and Concepts (writing their own explanations). 
-- The AI (Groq) is ONLY used to assist with generating interview questions, improving descriptions/explanations, verifying concept titles, and generating concept explanations.
+- The AI is ONLY used to assist with generating interview questions, improving descriptions/explanations, verifying concept titles, and generating concept explanations.
 - Never auto-generate study materials, domains, or concepts without user initiation.
 
 ## 🛠 2. Tech Stack
@@ -14,15 +14,15 @@ This app is a Personal Knowledge Tracker, NOT an auto-generator.
 - **Database:** MySQL
 - **Frontend:** Blade Templates, HTML5, CSS3, TailwindCSS, Alpine.js
 - **Auth:** Laravel Breeze
-- **AI Integration:** Groq API (via native `Illuminate\Support\Facades\Http`)
+- **AI Integration:** Provider-agnostic AI API (via native `Illuminate\Support\Facades\Http`)
 - **Debugging:** Laravel Telescope
 
 ## ⚠️ 3. Strict API & AI Constraints (Grading Criteria)
 When implementing any AI feature, you MUST adhere to these rules:
 1. **Zero External Packages:** DO NOT install `guzzlehttp/guzzle`, `openai-php`, or any AI SDKs. You MUST use Laravel's native `Illuminate\Support\Facades\Http`.
-2. **Authentication:** Read the API key strictly from `.env` using `env('GROQ_API_KEY')`. NEVER hardcode keys.
+2. **Authentication:** Read the API key strictly from `.env` using `env('AI_API_KEY')`. NEVER hardcode keys.
 3. **The API Call:** Use `Http::withToken(...)->post(...)`.
-4. **JSON Enforcement:** Instruct the Groq API to return strict JSON objects. Handle JSON decoding safely.
+4. **JSON Enforcement:** Instruct the AI API to return strict JSON objects. Handle JSON decoding safely.
 5. **Mandatory Error Handling:** Wrap API calls in `try...catch` blocks. If the API fails, times out, or returns an error, catch the exception and return a clean error message via Laravel session flash or JSON error response. NEVER show a blank page or raw stack trace to the user.
 6. **Database Persistence First:** Generated questions MUST be saved to the database (`generated_questions` table) BEFORE being displayed to the user.
 
@@ -94,8 +94,13 @@ app/
 ├── Models/          # Eloquent models with relationships
 ├── Providers/       # Service providers (rate limiters, etc.)
 └── Services/
-    ├── GroqService.php      # HTTP client for Groq API
-    └── PromptBuilder.php    # Builds AI prompts for all AI features
+    ├── AiService.php        # Orchestrates AI provider calls
+    ├── PromptBuilder.php    # Builds AI prompts for all AI features
+    ├── Contracts/
+    │   └── AiProvider.php   # Provider interface
+    └── Providers/
+        ├── OpenAiCompatibleProvider.php
+        └── AnthropicProvider.php
 
 resources/views/
 ├── components/

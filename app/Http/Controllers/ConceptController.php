@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateConceptRequest;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\GeneratedQuestion;
-use App\Services\GroqService;
+use App\Services\AiService;
 use App\Services\ProgressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +25,7 @@ class ConceptController extends Controller
         return view('concepts.create', compact('domain'));
     }
 
-    public function verifyTitle(Request $request, Domain $domain, GroqService $groq)
+    public function verifyTitle(Request $request, Domain $domain, AiService $ai)
     {
         $this->authorize('view', $domain);
 
@@ -34,14 +34,14 @@ class ConceptController extends Controller
         ]);
 
         try {
-            $result = $groq->verifyConceptTitle($data['title'], $domain->name);
+            $result = $ai->verifyConceptTitle($data['title'], $domain->name);
             return response()->json($result);
         } catch (\RuntimeException $e) {
             return response()->json(['error' => 'Failed to verify title: ' . $e->getMessage()], 500);
         }
     }
 
-    public function generateExplanation(Request $request, Domain $domain, GroqService $groq)
+    public function generateExplanation(Request $request, Domain $domain, AiService $ai)
     {
         $this->authorize('view', $domain);
 
@@ -50,7 +50,7 @@ class ConceptController extends Controller
         ]);
 
         try {
-            $result = $groq->generateConceptExplanation($data['title'], $domain->name);
+            $result = $ai->generateConceptExplanation($data['title'], $domain->name);
 
             if (isset($result['error']) && $result['error'] === 'invalid') {
                 return response()->json(['error' => $result['message']], 422);
@@ -235,7 +235,7 @@ class ConceptController extends Controller
         return redirect()->route('concepts.archives', $concept->domain_id)->with('success', 'Concept permanently deleted.');
     }
 
-    public function generateQuestions(Concept $concept, GroqService $groq)
+    public function generateQuestions(Concept $concept, AiService $ai)
     {
         $this->authorize('view', $concept);
 
@@ -246,7 +246,7 @@ class ConceptController extends Controller
         }
 
         try {
-            $questions = $groq->generateQuestions($concept, Auth::user());
+            $questions = $ai->generateQuestions($concept, Auth::user());
 
             if (isset($questions['error']) && $questions['error'] === 'unrelated') {
                 return back()->with('error', $questions['message'] ?? 'The concept is not relevant to this domain.');
@@ -277,7 +277,7 @@ class ConceptController extends Controller
         }
     }
 
-    public function submitAnswers(Request $request, Concept $concept, GroqService $groq, ProgressionService $progression)
+    public function submitAnswers(Request $request, Concept $concept, AiService $ai, ProgressionService $progression)
     {
         $this->authorize('view', $concept);
 
@@ -318,7 +318,7 @@ class ConceptController extends Controller
                 ];
             }
 
-            $evaluations = $groq->evaluateAnswers($concept, $qaPairs);
+            $evaluations = $ai->evaluateAnswers($concept, $qaPairs);
 
             $firstQuestion = $questions->first();
             $tier = $firstQuestion ? $firstQuestion->tier : 'junior';
@@ -473,12 +473,12 @@ class ConceptController extends Controller
         return view('concepts.archives', compact('concepts', 'domain'));
     }
 
-    public function improveExplanation(Concept $concept, GroqService $groq)
+    public function improveExplanation(Concept $concept, AiService $ai)
     {
         $this->authorize('update', $concept);
 
         try {
-            $suggestion = $groq->improveConceptExplanation($concept);
+            $suggestion = $ai->improveConceptExplanation($concept);
 
             return response()->json(['suggestion' => $suggestion]);
         } catch (\RuntimeException $e) {
