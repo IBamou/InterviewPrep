@@ -5,39 +5,81 @@ namespace App\Services;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use App\Services\Prompts\Concerns\HasJsonEnforcement;
+use App\Services\Prompts\Concerns\HasPersonas;
+use App\Services\Prompts\Concerns\HasTierGuide;
+use Illuminate\Support\Facades\Log;
 
 class PromptBuilder
 {
+    use HasPersonas;
+    use HasJsonEnforcement;
+    use HasTierGuide;
+
+    const VERSION_GENERATE_QUESTIONS = '1.1.0';
+    const VERSION_EVALUATE_ANSWERS = '1.1.0';
+    const VERSION_IMPROVE_DESCRIPTION = '1.1.0';
+    const VERSION_IMPROVE_EXPLANATION = '1.1.0';
+    const VERSION_GENERATE_EXPLANATION = '1.1.0';
+    const VERSION_VERIFY_TITLE = '1.0.0';
+    const VERSION_QUIZ = '1.1.0';
+
     protected int $dedupQuestionCount = 15;
 
-    protected function buildGenerateQuestionsSystemPrompt(bool $hasDomain = true): string
+    protected function logPrompt(string $type, string $version, array $context = []): void
     {
-        $generationInstruction = 'Generate exactly 5 mock interview questions.';
+        Log::debug("PromptBuilder: {$type}", array_merge(
+            ['version' => $version],
+            $context
+        ));
+    }
+
+    protected function buildGenerateQuestionsSystemPrompt(bool $hasDomain): string
+    {
+        $formatGuide = implode("\n", [
+            'Vary the question formats across the 5 questions. Draw from these categories:',
+            '- Conceptual: Tests core understanding of what something is and why it matters',
+            '- Comparative: Tests awareness of alternatives, trade-offs, and when to use each',
+            '- Practical: Tests ability to apply knowledge to real-world scenarios or implementation',
+            '- Scenario: Tests debugging, troubleshooting, or working through a problem step by step',
+            '- Depth: Tests knowledge of internals, edge cases, or advanced behavior under the hood',
+        ]);
+
+        $tierDistribution = implode("\n", [
+            'Distribute question types based on the difficulty tier:',
+            '- Junior: Mostly conceptual and practical. Few depth or comparative questions.',
+            '- Mid: Balanced mix across all categories. Emphasize comparative and practical.',
+            '- Senior: Heavy on depth, scenario, and practical. Minimal purely conceptual questions.',
+        ]);
+
+        $qualityRules = implode("\n", [
+            'Quality guidelines:',
+            '- Each question must be self-contained — the candidate should understand it without extra context.',
+            '- Be specific. Prefer concrete examples over vague prompts.',
+            '- Mirror real technical interviews. No trick questions, trivia, gotchas, or puzzles.',
+            '- Questions should assess genuine understanding, not memorization of facts.',
+            '- Cover different aspects of the concept. Do not ask the same thing in five different ways.',
+            '- Use plain English. No markdown, no formatting inside questions.',
+        ]);
+
+        $generationInstruction = "Generate exactly 5 mock interview questions.\n\n{$formatGuide}\n\n{$tierDistribution}\n\n{$qualityRules}";
 
         $relevanceBlock = $hasDomain
-            ? "First, check if the following concept is relevant to its parent domain ONLY. Ignore the user's profile, specialization, and background — relevance is purely about whether the concept belongs under the given domain. If it is NOT relevant to the domain, return: {\"error\": \"unrelated\", \"message\": \"The concept is not related to the domain.\"}\n\nIf it IS relevant, {$generationInstruction}"
+            ? "First, check if the following concept is relevant to its parent domain ONLY. When checking relevance, ignore the user's profile — relevance is purely about whether the concept belongs under the given domain. If it is NOT relevant to the domain, return: {\"error\": \"unrelated\", \"message\": \"The concept is not related to the domain.\"}\n\nIf it IS relevant, use the user's profile (status, specialization, experience, tech stack, and goals) provided in the message below to tailor the questions to their background, then {$generationInstruction}"
             : $generationInstruction;
 
-        $jsonTemplates = '{"questions": ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]}';
+        $jsonTemplates = $this->jsonTemplate('{"questions": ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]}');
 
         if ($hasDomain) {
             $jsonTemplates = '{"error": "unrelated", "message": "..."}' . "\nOR\n" . $jsonTemplates;
         }
 
-        return <<<PROMPT
-You are a technical interview coach. Be simple, precise, and direct. No extra talking.
-
-{$relevanceBlock}
-
-Generate questions appropriate to the difficulty tier specified in the user prompt:
-- Junior: Focus on definitions, basic concepts, "what is X", fundamental understanding
-- Mid: Focus on comparisons, trade-offs, practical usage, "when to use X vs Y"
-- Senior: Focus on system design, edge cases, deep internals, architecture decisions
-
-Return ONLY a valid JSON object.
-{$jsonTemplates}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaInterviewCoach() . "\n\n" .
+            $relevanceBlock . "\n\n" .
+            $this->tierGuide(),
+            $jsonTemplates
+        );
     }
 
     protected function buildGenerateQuestionsUserPrompt(Concept $concept, ?User $user = null): string
@@ -52,28 +94,38 @@ PROMPT;
 
         $tier = $concept->getHighestUnlockedTier();
 
-        $domainInstruction = $hasDomain
-            ? " specifically within the context of the domain mentioned above"
+        $domainContextLine = $hasDomain
+            ? " in the context of {$concept->domain->name}"
             : '';
 
-        $explanationBlock = trim($concept->explanation ?? '')
-            ? $concept->explanation
-            : '(No explanation written yet — generate questions based on the concept title alone)';
+        $parts = [
+            "{$userContext}{$domainContext}{$domainDescription}",
+            "Concept: {$concept->title}",
+            "Tier: {$tier}",
+        ];
 
-        return <<<PROMPT
-{$userContext}{$domainContext}{$domainDescription}
-Concept: {$concept->title}
-Tier: {$tier}
-Explanation:
-{$explanationBlock}
+        if (trim($concept->explanation ?? '')) {
+            $parts[] = 'Explanation:';
+            $parts[] = $concept->explanation;
+        } else {
+            $parts[] = 'Note: No explanation has been written for this concept yet. Generate questions based on the concept title and tier alone.';
+        }
 
-Generate 5 interview questions at the {$tier} level that test understanding of this concept{$domainInstruction}.
-{$dedupSection}
-PROMPT;
+        $parts[] = '';
+        $parts[] = "Generate 5 interview questions at the {$tier} level that test understanding of this concept{$domainContextLine}. Cover different aspects — avoid asking about the same sub-topic multiple times.";
+        $parts[] = $dedupSection;
+
+        return implode("\n", $parts);
     }
 
     public function buildGenerateQuestionsMessages(Concept $concept, ?User $user = null): array
     {
+        $this->logPrompt('generate_questions', self::VERSION_GENERATE_QUESTIONS, [
+            'concept_id' => $concept->id,
+            'domain_id' => $concept->domain_id,
+            'tier' => $concept->getHighestUnlockedTier(),
+        ]);
+
         $hasDomain = (bool) $concept->domain;
 
         return [
@@ -84,35 +136,34 @@ PROMPT;
 
     protected function buildEvaluateAnswersSystemPrompt(): string
     {
-        return <<<'PROMPT'
-You are an interview coach evaluating candidate answers. Be simple, precise, and direct. No extra talking.
+        $ratingScale = implode("\n", [
+            'Rating scale:',
+            '- 0 = No answer provided (blank)',
+            '- 1 = Completely wrong or major misconceptions',
+            '- 2 = Partially correct but significant gaps',
+            '- 3 = Basic understanding, correct but lacks depth',
+            '- 4 = Strong answer with good detail',
+            '- 5 = Expert-level, comprehensive, covers edge cases',
+        ]);
 
-Rating scale:
-- 0 = No answer provided (blank)
-- 1 = Completely wrong or major misconceptions
-- 2 = Partially correct but significant gaps
-- 3 = Basic understanding, correct but lacks depth
-- 4 = Strong answer with good detail
-- 5 = Expert-level, comprehensive, covers edge cases
+        $blankAnswerRule = implode("\n", [
+            'IMPORTANT: If the user\'s answer is empty or just whitespace, they don\'t know the answer. In this case:',
+            '- Give a rating of 0',
+            '- Use exactly this feedback: "No answer provided. Study the model answer below to learn this concept."',
+            '- Give a clear, concise model answer so the user can learn',
+        ]);
 
-Adjust your expectations based on the difficulty tier specified in the user prompt:
-- Junior: Basic understanding is sufficient for a good rating
-- Mid: Expect practical knowledge and trade-off awareness
-- Senior: Expect deep understanding, edge cases, and architectural thinking
-
-For each question-answer pair below, provide:
-1. A rating from 0 to 5 (integer)
-2. Brief constructive feedback (1-2 sentences max)
-3. A concise model answer (2-3 sentences max)
-
-IMPORTANT: If the user's answer is empty or just whitespace, they don't know the answer. In this case:
-- Give a rating of 0
-- Use exactly this feedback: "No answer provided. Study the model answer below to learn this concept."
-- Give a clear, concise model answer so the user can learn
-
-Return ONLY valid JSON with this exact structure:
-{"evaluations": [{"question_index": 0, "rating": 4, "feedback": "...", "model_answer": "..."}, ...]}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaEvaluationCoach() . "\n\n" .
+            $ratingScale . "\n\n" .
+            $this->tierEvaluationGuide() . "\n\n" .
+            'For each question-answer pair below, provide:' . "\n" .
+            '1. A rating from 0 to 5 (integer)' . "\n" .
+            '2. Brief constructive feedback (1-2 sentences max)' . "\n" .
+            '3. A concise model answer (2-3 sentences max)' . "\n\n" .
+            $blankAnswerRule,
+            '{"evaluations": [{"question_index": 0, "rating": 4, "feedback": "...", "model_answer": "..."}, ...]}'
+        );
     }
 
     protected function buildEvaluateAnswersUserPrompt(Concept $concept, array $answers): string
@@ -128,16 +179,16 @@ PROMPT;
 
         $tier = $concept->getHighestUnlockedTier();
 
-        return <<<PROMPT
-{$domainContext}{$domainDescription}Concept: {$concept->title}
-Difficulty Level: {$tier}
-
-{$questionsList}
-PROMPT;
+        return "{$domainContext}{$domainDescription}Concept: {$concept->title}\nDifficulty Level: {$tier}\n\n{$questionsList}";
     }
 
     public function buildEvaluateAnswersMessages(Concept $concept, array $answers): array
     {
+        $this->logPrompt('evaluate_answers', self::VERSION_EVALUATE_ANSWERS, [
+            'concept_id' => $concept->id,
+            'answer_count' => count($answers),
+        ]);
+
         return [
             ['role' => 'system', 'content' => $this->buildEvaluateAnswersSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildEvaluateAnswersUserPrompt($concept, $answers)],
@@ -203,37 +254,41 @@ PROMPT;
 
     protected function buildImproveDomainDescriptionSystemPrompt(): string
     {
-        return <<<'PROMPT'
-You are a technical education expert. Be simple, precise, and direct. No extra talking.
-
-If a description is provided, rewrite it to be a solid, concise definition (1-2 sentences max). Focus on what the domain is and its core purpose. Do not add fluff, history, or unnecessary details.
-If no description is provided, generate one from scratch based on the domain name.
-
-Return ONLY a valid JSON object:
-{"improved_description": "Your improved text here"}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaEducationExpert() . "\n\n" .
+            'If a description is provided, rewrite it to be a solid, concise definition (1-2 sentences max). Focus on what the domain is and its core purpose. Do not add fluff, history, or unnecessary details.' . "\n" .
+            'If no description is provided, generate one from scratch based on the domain name.',
+            '{"improved_description": "Your improved text here"}'
+        );
     }
 
     protected function buildImproveDomainDescriptionUserPrompt(Domain $domain): string
     {
-        $isEmpty = empty(trim($domain->description ?? ''));
-        $current = $isEmpty ? '(No description provided — generate one from scratch)' : $domain->description;
+        $hasDescription = trim($domain->description ?? '');
 
-        $instruction = $isEmpty
-            ? "Generate a concise, solid definition (1-2 sentences max) for this domain based on its name."
-            : "Rewrite this as a concise, solid definition (1-2 sentences max).";
+        $parts = [
+            "Domain: {$domain->name}",
+        ];
 
-        return <<<PROMPT
-Domain: {$domain->name}
-Current description:
-{$current}
+        if ($hasDescription) {
+            $parts[] = 'Current description:';
+            $parts[] = $domain->description;
+            $parts[] = '';
+            $parts[] = "Rewrite this as a concise, solid definition (1-2 sentences max).";
+        } else {
+            $parts[] = '';
+            $parts[] = "Generate a concise, solid definition (1-2 sentences max) for this domain based on its name.";
+        }
 
-{$instruction}
-PROMPT;
+        return implode("\n", $parts);
     }
 
     public function buildImproveDomainDescriptionMessages(Domain $domain): array
     {
+        $this->logPrompt('improve_description', self::VERSION_IMPROVE_DESCRIPTION, [
+            'domain_id' => $domain->id,
+        ]);
+
         return [
             ['role' => 'system', 'content' => $this->buildImproveDomainDescriptionSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildImproveDomainDescriptionUserPrompt($domain)],
@@ -242,37 +297,43 @@ PROMPT;
 
     protected function buildImproveConceptExplanationSystemPrompt(): string
     {
-        return <<<'PROMPT'
-You are a technical education expert. Be simple, precise, and direct. No extra talking.
-
-If an explanation is provided, rewrite it to be a solid, concise definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
-If no explanation is provided, generate one from scratch based on the concept title.
-
-Return ONLY a valid JSON object:
-{"improved_explanation": "Your improved text here"}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaEducationExpert() . "\n\n" .
+            'If an explanation is provided, rewrite it to be a solid, concise definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.' . "\n" .
+            'If no explanation is provided, generate one from scratch based on the concept title.',
+            '{"improved_explanation": "Your improved text here"}'
+        );
     }
 
     protected function buildImproveConceptExplanationUserPrompt(Concept $concept): string
     {
-        $isEmpty = empty(trim($concept->explanation ?? ''));
-        $current = $isEmpty ? '(No explanation provided — generate one from scratch)' : $concept->explanation;
+        $domainName = $concept->domain?->name ?? 'General';
+        $hasExplanation = trim($concept->explanation ?? '');
 
-        $instruction = $isEmpty
-            ? "Generate a concise, solid definition (2-3 short sentences max) for this concept. Cover what it is and why it matters for interviews."
-            : "Rewrite this as a concise, solid definition (2-3 short sentences max).";
+        $parts = [
+            "Domain: {$domainName}",
+            "Concept: {$concept->title}",
+        ];
 
-        return <<<PROMPT
-Concept: {$concept->title}
-Current explanation:
-{$current}
+        if ($hasExplanation) {
+            $parts[] = 'Current explanation:';
+            $parts[] = $concept->explanation;
+            $parts[] = '';
+            $parts[] = "Rewrite this as a concise, solid definition (2-3 short sentences max).";
+        } else {
+            $parts[] = '';
+            $parts[] = "Generate a concise, solid definition (2-3 short sentences max) for this concept in the context of {$domainName}. Cover what it is and why it matters for interviews.";
+        }
 
-{$instruction}
-PROMPT;
+        return implode("\n", $parts);
     }
 
     public function buildImproveConceptExplanationMessages(Concept $concept): array
     {
+        $this->logPrompt('improve_explanation', self::VERSION_IMPROVE_EXPLANATION, [
+            'concept_id' => $concept->id,
+        ]);
+
         return [
             ['role' => 'system', 'content' => $this->buildImproveConceptExplanationSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildImproveConceptExplanationUserPrompt($concept)],
@@ -281,34 +342,32 @@ PROMPT;
 
     protected function buildGenerateConceptExplanationSystemPrompt(): string
     {
-        return <<<'PROMPT'
-You are a technical education expert. Be simple, precise, and direct. No extra talking.
-
-First, check if the concept title is a valid technical term related to the given domain. Be lenient with typos — attempt to interpret what the user meant (e.g., "type castng" → "Type Casting", "routng" → "Routing"). Only reject if the input is truly gibberish, random characters, or completely unrelated to the domain.
-
-If rejected, return: {"error": "invalid", "message": "The concept title is not valid or not related to this domain."}
-
-If valid, generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.
-
-Return ONLY a valid JSON object. Either:
-{"error": "invalid", "message": "..."}
-OR
-{"explanation": "Your explanation here"}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaEducationExpert() . "\n\n" .
+            'First, check if the concept title is a valid technical term related to the given domain. Be lenient with typos — attempt to interpret what the user meant (e.g., "type castng" → "Type Casting", "routng" → "Routing"). Only reject if the input is truly gibberish, random characters, or completely unrelated to the domain.' . "\n\n" .
+            'If rejected, return: {"error": "invalid", "message": "The concept title is not valid or not related to this domain."}' . "\n\n" .
+            'If valid, generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews. Do not add long examples, history, or unnecessary details. Keep it tight and focused.',
+            '{"error": "invalid", "message": "..."}' . "\nOR\n" . '{"explanation": "Your explanation here"}'
+        );
     }
 
     protected function buildGenerateConceptExplanationUserPrompt(string $title, string $domainName): string
     {
-        return <<<PROMPT
-Domain: {$domainName}
-Concept: {$title}
-
-Generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews.
-PROMPT;
+        return implode("\n", [
+            "Domain: {$domainName}",
+            "Concept: {$title}",
+            '',
+            'Generate a concise, solid definition (2-3 short sentences max). Cover what it is and why it matters for interviews.',
+        ]);
     }
 
     public function buildGenerateConceptExplanationMessages(string $title, string $domainName): array
     {
+        $this->logPrompt('generate_explanation', self::VERSION_GENERATE_EXPLANATION, [
+            'title' => $title,
+            'domain' => $domainName,
+        ]);
+
         return [
             ['role' => 'system', 'content' => $this->buildGenerateConceptExplanationSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildGenerateConceptExplanationUserPrompt($title, $domainName)],
@@ -317,30 +376,32 @@ PROMPT;
 
     protected function buildVerifyConceptTitleSystemPrompt(): string
     {
-        return <<<'PROMPT'
-You are a technical education expert. Be simple, precise, and direct. No extra talking.
-
-Check if the given concept title is a valid technical term related to the domain. Be lenient with typos — detect what the user likely meant.
-
-Return ONLY a valid JSON object with one of these structures:
-1. If valid and correctly spelled: {"valid": true}
-2. If valid but has a typo: {"valid": false, "suggestion": "Corrected Title", "message": "Did you mean 'Corrected Title'?"}
-3. If gibberish or unrelated: {"valid": false, "message": "This doesn't appear to be a valid technical concept for this domain."}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaEducationExpert() . "\n\n" .
+            'Check if the given concept title is a valid technical term related to the domain. Be lenient with typos — detect what the user likely meant.',
+            '1. If valid and correctly spelled: {"valid": true}' . "\n" .
+            '2. If valid but has a typo: {"valid": false, "suggestion": "Corrected Title", "message": "Did you mean \'Corrected Title\'?"}' . "\n" .
+            '3. If gibberish or unrelated: {"valid": false, "message": "This doesn\'t appear to be a valid technical concept for this domain."}'
+        );
     }
 
     protected function buildVerifyConceptTitleUserPrompt(string $title, string $domainName): string
     {
-        return <<<PROMPT
-Domain: {$domainName}
-Concept title to verify: {$title}
-
-Check if this is a valid technical concept for this domain. If there's a typo, suggest the correct spelling.
-PROMPT;
+        return implode("\n", [
+            "Domain: {$domainName}",
+            "Concept title to verify: {$title}",
+            '',
+            'Check if this is a valid technical concept for this domain. If there\'s a typo, suggest the correct spelling.',
+        ]);
     }
 
     public function buildVerifyConceptTitleMessages(string $title, string $domainName): array
     {
+        $this->logPrompt('verify_title', self::VERSION_VERIFY_TITLE, [
+            'title' => $title,
+            'domain' => $domainName,
+        ]);
+
         return [
             ['role' => 'system', 'content' => $this->buildVerifyConceptTitleSystemPrompt()],
             ['role' => 'user', 'content' => $this->buildVerifyConceptTitleUserPrompt($title, $domainName)],
@@ -349,21 +410,13 @@ PROMPT;
 
     protected function buildQuizSystemPrompt(int $questionCount): string
     {
-        return <<<PROMPT
-You are a technical interview coach. Be simple, precise, and direct. No extra talking.
-
-Generate {$questionCount} mock interview questions covering ALL the concepts listed below. Mix questions across concepts — don't ask about the same concept twice in a row.
-
-Each concept has a difficulty tier. Match question difficulty to the concept's tier:
-- Junior: Definitions, basic understanding, "what is X"
-- Mid: Comparisons, trade-offs, practical usage
-- Senior: Edge cases, internals, architecture decisions
-
-CRITICAL — DO NOT repeat or rephrase any questions listed in the "Previously generated questions" section. Every question must be new and unique.
-
-Return ONLY a valid JSON object:
-{"questions": [{"question": "What is X?", "concept": "Concept Name"}, ...]}
-PROMPT;
+        return $this->enforceJson(
+            $this->personaInterviewCoach() . "\n\n" .
+            "Generate {$questionCount} mock interview questions covering ALL the concepts listed below. Mix questions across concepts — don't ask about the same concept twice in a row." . "\n\n" .
+            $this->tierGuide() . "\n\n" .
+            'CRITICAL — DO NOT repeat or rephrase any questions listed in the "Previously generated questions" section. Every question must be new and unique.',
+            '{"questions": [{"question": "What is X?", "concept": "Concept Name"}, ...]}'
+        );
     }
 
     protected function buildQuizUserPrompt(Domain $domain, iterable $concepts, int $questionCount): string
@@ -385,14 +438,14 @@ PROMPT;
 
         $dedupSection = $this->buildQuizDedupSection($concepts);
 
-        return <<<PROMPT
-{$domainContext}
-Concepts to cover:
-{$conceptList}
-
-Generate {$questionCount} interview questions that test understanding of these concepts within the context of {$domain->name}. Mix the questions across concepts evenly. For each question, set the "concept" field to the EXACT concept title from the list above.
-{$dedupSection}
-PROMPT;
+        return implode("\n", [
+            $domainContext,
+            'Concepts to cover:',
+            $conceptList,
+            '',
+            "Generate {$questionCount} interview questions that test understanding of these concepts within the context of {$domain->name}. Mix the questions across concepts evenly. For each question, set the \"concept\" field to the EXACT concept title from the list above.",
+            $dedupSection,
+        ]);
     }
 
     protected function buildQuizDedupSection(iterable $concepts): string
@@ -422,6 +475,14 @@ PROMPT;
 
     public function buildQuizMessages(Domain $domain, iterable $concepts, int $questionCount): array
     {
+        $concepts = collect($concepts);
+
+        $this->logPrompt('quiz', self::VERSION_QUIZ, [
+            'domain_id' => $domain->id,
+            'question_count' => $questionCount,
+            'concept_count' => $concepts->count(),
+        ]);
+
         return [
             ['role' => 'system', 'content' => $this->buildQuizSystemPrompt($questionCount)],
             ['role' => 'user', 'content' => $this->buildQuizUserPrompt($domain, $concepts, $questionCount)],
