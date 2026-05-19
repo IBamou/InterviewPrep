@@ -1,12 +1,12 @@
 # InterviewPrep
 
-A personal knowledge tracker for developers to structure their technical knowledge and generate mock interview questions using the Groq AI API.
+A personal knowledge tracker for developers to structure their technical knowledge and generate mock interview questions using AI.
 
 ## Features
 
 - **Domain Management** — Organize topics (PHP, Laravel, MySQL, etc.) with custom colors and descriptions
 - **Concept Tracking** — Create, edit, and track your understanding of technical concepts with difficulty levels and mastery status
-- **AI Question Generation** — Generate 5 unique interview questions per set using Groq AI, with automatic deduplication
+- **AI Question Generation** — Generate 5 unique interview questions per set using AI, with automatic deduplication
 - **Practice Mode** — Answer questions and get AI-powered feedback with ratings and model answers
 - **AI Description Improvement** — Get concise AI suggestions for domain descriptions and concept explanations with accept/reject flow
 - **Global Search** — Search across domains, concepts, and questions with type filtering
@@ -19,7 +19,7 @@ A personal knowledge tracker for developers to structure their technical knowled
 - **Database:** MySQL
 - **Frontend:** Blade Templates, TailwindCSS, Alpine.js
 - **Auth:** Laravel Breeze
-- **AI Integration:** Groq API (via Laravel HTTP client — no external packages)
+- **AI Integration:** Provider-agnostic AI API (via Laravel HTTP client — no external packages)
 
 ## Installation
 
@@ -49,9 +49,9 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-5. Add your Groq API key in `.env`:
+5. Add your AI API key in `.env`:
 ```
-GROQ_API_KEY=your_api_key_here
+AI_API_KEY=your_api_key_here
 ```
 
 6. Run migrations:
@@ -91,8 +91,13 @@ app/
 ├── Models/         # Eloquent models with relationships
 ├── Policies/       # Authorization policies
 └── Services/
-    ├── GroqService     # API communication layer
-    └── PromptBuilder   # Prompt construction with dedup logic
+    ├── AiService       # Orchestrates AI provider calls
+    ├── PromptBuilder   # Builds AI prompts for all AI features
+    ├── Contracts/
+    │   └── AiProvider  # Provider interface
+    └── Providers/
+        ├── OpenAiCompatibleProvider
+        └── AnthropicProvider
 ```
 
 ## License

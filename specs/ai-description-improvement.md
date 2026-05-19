@@ -35,7 +35,7 @@ Allow users to improve or generate domain descriptions using AI.
 
 ### Services
 - `PromptBuilder::buildImproveDomainDescriptionMessages()` builds prompts
-- `GroqService::improveDomainDescription()` makes API call
+- `AiService::improveDomainDescription()` makes API call (via `AiProvider`)
 - System prompt instructs AI to generate from scratch if description is empty
 
 ### Response Format

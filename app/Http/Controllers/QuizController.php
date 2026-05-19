@@ -7,7 +7,7 @@ use App\Http\Requests\StoreQuizRequest;
 use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\Quiz;
-use App\Services\GroqService;
+use App\Services\AiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class QuizController extends Controller
 {
-    protected GroqService $groq;
+    protected AiService $ai;
 
-    public function __construct(GroqService $groq)
+    public function __construct(AiService $ai)
     {
-        $this->groq = $groq;
+        $this->ai = $ai;
     }
 
     public function index()
@@ -46,7 +46,7 @@ class QuizController extends Controller
         $questionCount = min(max(count($concepts) * config('quiz.questions.per_concept'), config('quiz.questions.min_per_quiz')), config('quiz.questions.max_per_quiz'));
         $timeLimit = max(round($questionCount * config('quiz.timer.minutes_per_question')), config('quiz.timer.min_minutes'));
 
-        $questions = $this->groq->generateQuizQuestions($domain, $concepts, $questionCount);
+        $questions = $this->ai->generateQuizQuestions($domain, $concepts, $questionCount);
 
         $quiz = DB::transaction(function () use ($domain, $timeLimit, $questions, $concepts) {
             $quiz = Auth::user()->quizzes()->create([
@@ -272,7 +272,7 @@ class QuizController extends Controller
         $evaluationsByQuestion = collect();
         if (!empty($batches)) {
             try {
-                $results = $this->groq->evaluateAnswersBatch($batches);
+                $results = $this->ai->evaluateAnswersBatch($batches);
                 foreach ($results as $questionId => $eval) {
                     $evaluationsByQuestion->put($questionId, $eval);
                 }

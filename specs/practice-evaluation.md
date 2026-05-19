@@ -53,7 +53,7 @@ Allow users to answer generated interview questions and receive AI-powered feedb
 
 ### Services
 - `PromptBuilder::buildEvaluateAnswersMessages()` builds evaluation prompts
-- `GroqService::evaluateAnswers()` makes API call
+- `AiService::evaluateAnswers()` makes API call (via `AiProvider`)
 - System prompt defines evaluation criteria and response format
 
 ### Response Format

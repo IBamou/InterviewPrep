@@ -42,7 +42,7 @@ Generate exactly 5 mock interview questions for a concept, personalized to the u
 
 ### Services
 - `PromptBuilder` builds system + user prompts with user context
-- `GroqService` makes the API call and parses the JSON response
+- `AiService` makes the API call (via `AiProvider`) and parses the JSON response
 - User profile is passed through the entire chain
 
 ### Prompts
