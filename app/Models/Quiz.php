@@ -12,7 +12,7 @@ class Quiz extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'domain_id', 'time_limit_minutes', 'started_at', 'submitted_at', 'status', 'total_score', 'max_score', 'passed'];
+    protected $fillable = ['user_id', 'domain_id', 'time_limit_minutes', 'started_at', 'submitted_at', 'status', 'total_score', 'max_score', 'passed', 'generating'];
 
     protected function casts(): array
     {
@@ -21,6 +21,7 @@ class Quiz extends Model
             'submitted_at' => 'datetime',
             'status' => QuizStatus::class,
             'passed' => 'boolean',
+            'generating' => 'boolean',
         ];
     }
 

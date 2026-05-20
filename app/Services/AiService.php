@@ -122,6 +122,8 @@ class AiService
                         }
                     }
                 }
+            } else {
+                Log::warning('AI batch evaluation failed for batch: ' . $key);
             }
         }
 
@@ -200,7 +202,6 @@ class AiService
             $parsed = $this->provider->chatJson($messages, [
                 'max_tokens' => config('ai.tokens.verification'),
                 'temperature' => config('ai.temperatures.verification'),
-                'extra' => ['temperature' => config('ai.temperatures.verification')],
             ]);
         } catch (\Exception $e) {
             Log::warning('AI concept title verification failed: ' . $e->getMessage());
@@ -268,35 +269,47 @@ class AiService
         $model = $this->provider->getConfig('model');
 
         return response()->stream(function () use ($messages, $baseUrl, $apiKey, $model) {
-            $response = Http::baseUrl($baseUrl)
-                ->withToken($apiKey)
-                ->withOptions(['stream' => true])
-                ->post('/chat/completions', [
-                    'model' => $model,
-                    'messages' => $messages,
-                    'stream' => true,
-                ]);
+            try {
+                $response = Http::baseUrl($baseUrl)
+                    ->withToken($apiKey)
+                    ->withOptions(['stream' => true])
+                    ->post('/chat/completions', [
+                        'model' => $model,
+                        'messages' => $messages,
+                        'stream' => true,
+                    ]);
 
-            foreach ($response->toPsrResponse()->getBody() as $chunk) {
-                $lines = explode("\n", $chunk);
+                if ($response->failed()) {
+                    echo 'data: '.json_encode(['error' => 'AI provider request failed'])."\n\n";
+                    echo "data: [DONE]\n\n";
+                    ob_flush();
+                    flush();
+                    return;
+                }
 
-                foreach ($lines as $line) {
-                    $line = trim($line);
+                foreach ($response->toPsrResponse()->getBody() as $chunk) {
+                    $lines = explode("\n", $chunk);
 
-                    if (empty($line) || $line === 'data: [DONE]') {
-                        continue;
-                    }
+                    foreach ($lines as $line) {
+                        $line = trim($line);
 
-                    $jsonStr = str_replace('data: ', '', $line);
-                    $data = json_decode($jsonStr, true);
-                    $content = $data['choices'][0]['delta']['content'] ?? '';
+                        if (empty($line) || $line === 'data: [DONE]') {
+                            continue;
+                        }
 
-                    if ($content) {
-                        echo 'data: '.json_encode(['content' => $content])."\n\n";
-                        ob_flush();
-                        flush();
+                        $jsonStr = str_replace('data: ', '', $line);
+                        $data = json_decode($jsonStr, true);
+                        $content = $data['choices'][0]['delta']['content'] ?? '';
+
+                        if ($content) {
+                            echo 'data: '.json_encode(['content' => $content])."\n\n";
+                            ob_flush();
+                            flush();
+                        }
                     }
                 }
+            } catch (\Exception $e) {
+                echo 'data: '.json_encode(['error' => 'Stream error: '.$e->getMessage()])."\n\n";
             }
 
             echo "data: [DONE]\n\n";

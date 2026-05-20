@@ -20,7 +20,7 @@
     </div>
     @endif
 
-    <div x-data="quizTimer({{ $quiz->time_limit_minutes }}, {{ $quiz->started_at?->timestamp ?? now()->timestamp }}, {{ json_encode($timeExpired) }})" x-init="initTimer()">
+    <div x-data="quizTimer({{ $quiz->time_limit_minutes }}, {{ $quiz->started_at?->timestamp ?? now()->timestamp }}, {{ Js::from($timeExpired) }})" x-init="initTimer()">
 
         @if ($timeExpired)
         <div class="mb-4 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[13px] text-amber-800 flex items-center gap-2">
@@ -68,14 +68,14 @@
                 confirmMessage: '',
                 confirmVariant: 'danger',
                 confirmAction: null,
+                submitting: false,
                 get total() { return {{ $quiz->questions->count() }}; },
                 get isLast() { return this.current === this.total - 1; },
                 get isFirst() { return this.current === 0; },
                 get progress() { return this.current + 1 + ' / ' + this.total; },
                 prev() { if (this.current > 0) this.current--; },
                 next() { if (this.current < this.total - 1) this.current++; },
-                getQuestionName(index) { return 'answers[' + index + ']'; },
-                getRatingName(index) { return 'ratings[' + index + ']'; },
+                //
                 init() {
                     const saved = localStorage.getItem('quiz_draft_{{ $quiz->id }}');
                     if (saved) {
@@ -101,6 +101,7 @@
                     localStorage.removeItem('quiz_draft_{{ $quiz->id }}');
                 },
                 submitQuiz() {
+                    if (this.submitting) return;
                     const filled = Object.values(this.answers).filter(a => a?.trim()).length;
                     const minRequired = Math.max(Math.ceil(this.total / 3), 1);
                     if (filled < minRequired) {
@@ -116,17 +117,20 @@
                     this.confirmMessage = 'Submit your quiz for AI evaluation? Unanswered questions will be scored 0.';
                     this.confirmVariant = 'success';
                     this.confirmAction = () => {
+                        this.submitting = true;
                         document.getElementById('mode-input').value = 'submit';
                         document.getElementById('quiz-form').submit();
                     };
                     this.showConfirm = true;
                 },
                 endQuiz() {
+                    if (this.submitting) return;
                     this.clearDraft();
                     this.confirmTitle = 'End Quiz';
                     this.confirmMessage = 'End the quiz now? Your progress will be saved but answers will NOT be evaluated by AI.';
                     this.confirmVariant = 'danger';
                     this.confirmAction = () => {
+                        this.submitting = true;
                         document.getElementById('mode-input').value = 'end';
                         document.getElementById('quiz-form').submit();
                     };
@@ -206,7 +210,7 @@
                                       class="w-full rounded-xl border border-outline-variant/60 text-[12px] p-3 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none transition-all resize-y placeholder:text-on-surface-variant/30 font-mono"
                                        placeholder="Write your answer..."></textarea>
                             <input type="hidden" :name="'ratings[' + {{ $index }} + ']'" value="3">
-                            <p class="text-[11px] mt-2 text-center font-semibold flex items-center justify-center gap-1" :style="'color: ' + (timeLeft < 300 ? '#E63946' : '#0077b6')"><span class="material-symbols-outlined text-[14px]">info</span> Answers are auto-submitted when time expires.</p>
+                            <p class="text-[11px] mt-2 text-center font-semibold flex items-center justify-center gap-1 {{ $timeExpired ? 'text-error' : 'text-secondary' }}"><span class="material-symbols-outlined text-[14px]">info</span> Answers are auto-submitted when time expires.</p>
                         </div>
                     </section>
                     @endforeach

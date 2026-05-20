@@ -38,6 +38,7 @@ class Domain extends Model
 
         static::restored(function (Domain $domain) {
             $domain->concepts()->withTrashed()->restore();
+            $domain->quizzes()->withTrashed()->restore();
         });
     }
 }

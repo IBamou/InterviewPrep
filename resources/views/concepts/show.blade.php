@@ -54,7 +54,7 @@
                 </div>
                 <div x-show="showSuggestion" x-cloak class="mt-3 bg-primary-fixed/30 border border-primary/20 rounded-lg p-3">
                     <p class="text-[12px] font-medium text-on-surface-variant/50 mb-1">AI Suggestion:</p>
-                    <div class="text-[14px] text-on-surface-variant/80 leading-relaxed mb-3 whitespace-pre-wrap" x-text="suggestion"></div>
+                    <div class="text-[14px] text-on-surface-variant/80 leading-relaxed mb-3 whitespace-pre-wrap" x-html="suggestion"></div>
                     <div class="flex items-center gap-2">
                         <form :action="acceptUrl" method="POST" class="inline">
                             @csrf
@@ -449,7 +449,7 @@
                         alert(data.error);
                         return;
                     }
-                    this.suggestion = data.suggestion.replace(/\n/g, '<br>');
+                    this.suggestion = data.suggestion;
                     this.showSuggestion = true;
                 })
                 .catch(() => {

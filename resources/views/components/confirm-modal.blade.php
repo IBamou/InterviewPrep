@@ -9,14 +9,13 @@
         <p id="confirm-message" class="text-[13px] text-on-surface-variant/70 mb-5"></p>
         <div class="flex gap-2 justify-end">
             <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-[13px] font-medium hover:bg-surface-container transition-all">Cancel</button>
-            <button type="button" id="confirm-action" onclick="if (confirmCallback) { confirmCallback(); closeConfirmModal(); }" class="px-4 py-2 bg-error text-white rounded-lg text-[13px] font-medium hover:bg-error/90 transition-all">Confirm</button>
+            <button type="button" id="confirm-action" onclick="if (window._confirmCallback) { window._confirmCallback(); closeConfirmModal(); }" class="px-4 py-2 bg-error text-white rounded-lg text-[13px] font-medium hover:bg-error/90 transition-all">Confirm</button>
         </div>
     </div>
 </div>
 
 <script>
 (function () {
-    var confirmCallback = null;
     window.showConfirmModal = function (title, message, callback, variant) {
         variant = variant || 'danger';
         var modal = document.getElementById('confirm-modal'),
@@ -27,7 +26,7 @@
             iconEl = document.getElementById('confirm-icon');
         titleEl.textContent = title;
         msgEl.textContent = message;
-        confirmCallback = callback;
+        window._confirmCallback = callback;
         if (variant === 'success') {
             actionBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-primary/90 transition-all';
             iconEl.className = 'w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0';
@@ -52,7 +51,7 @@
         setTimeout(function () {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            confirmCallback = null;
+            window._confirmCallback = null;
         }, 200);
     };
     document.getElementById('confirm-modal').addEventListener('click', function (e) {

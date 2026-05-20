@@ -225,6 +225,11 @@
                             this.$watch('current', () => {
                                 setTimeout(() => this.$refs['textarea_' + this.current]?.focus(), 50);
                             });
+                        },
+                        destroy() {
+                            if (this._saveTimer) {
+                                clearInterval(this._saveTimer);
+                            }
                         }
                       }">
                     @csrf
@@ -313,7 +318,7 @@
                                 </button>
                                 @if ($needsSubmission)
                                 <button type="button" x-show="isLast"
-                                        @click="showConfirmModal('Submit answers', 'Submit all ' + total + ' answers for AI review?', () => $el.closest('form').submit(), 'success')"
+                                        @click="(() => { const form = $el.closest('form'); showConfirmModal('Submit answers', 'Submit all ' + total + ' answers for AI review?', () => form.submit(), 'success'); })()"
                                         class="px-4 py-2 bg-primary text-white rounded-lg text-[12px] font-medium hover:bg-primary/90 transition-all flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-[14px]">rate_review</span>
                                     Submit

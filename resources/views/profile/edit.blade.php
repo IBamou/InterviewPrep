@@ -32,7 +32,7 @@
             <h3 class="text-[14px] font-semibold text-on-surface mb-1">Interview Profile</h3>
             <p class="text-[13px] text-on-surface-variant/60 mb-4">Customize your interview prep experience. AI will tailor questions to your background.</p>
             <form method="POST" action="{{ route('profile.interview') }}" x-data="{
-                techStack: {{ json_encode(old('tech_stack', $user->tech_stack ?? [])) }},
+                techStack: {{ Js::from(old('tech_stack', $user->tech_stack ?? [])) }},
                 newTech: '',
                 addTech() {
                     const t = this.newTech.trim();

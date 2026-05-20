@@ -18,7 +18,9 @@ class Concept extends Model
     protected static function booted(): void
     {
         static::deleting(function (Concept $concept) {
-            $concept->generatedQuestions()->delete();
+            if ($concept->isForceDeleting()) {
+                $concept->generatedQuestions()->delete();
+            }
         });
     }
 
@@ -93,8 +95,8 @@ class Concept extends Model
     {
         return $this->generatedQuestions()
             ->whereNotNull('rating')
-            ->distinct('set_number')
-            ->count('set_number');
+            ->selectRaw('COUNT(DISTINCT set_number)')
+            ->value('COUNT(DISTINCT set_number)') ?? 0;
     }
 
     private function ensureQuizEval(): array
