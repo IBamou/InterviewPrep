@@ -29,6 +29,8 @@ class DomainController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Domain::class);
+
         return view('domains.create');
     }
 

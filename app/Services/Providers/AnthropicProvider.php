@@ -48,7 +48,7 @@ class AnthropicProvider implements AiProvider
             }
         }
 
-        $systemPrompt .= "\nReturn ONLY a valid JSON object. No markdown, no code fences, no explanation.";
+        // JSON enforcement is already handled by HasJsonEnforcement trait in the system prompt
 
         $anthropicMessages = $this->convertMessages($converted);
 

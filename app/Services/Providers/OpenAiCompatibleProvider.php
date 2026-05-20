@@ -33,7 +33,13 @@ class OpenAiCompatibleProvider implements AiProvider
             'temperature' => $options['temperature'] ?? $this->defaults['temperature'],
         ], $options['extra'] ?? []));
 
-        return $response->json('choices.0.message.content');
+        $content = $response->json('choices.0.message.content');
+
+        if (!$content) {
+            throw new \RuntimeException('Empty response content from AI provider.');
+        }
+
+        return $content;
     }
 
     public function chatJson(array $messages, array $options = []): array

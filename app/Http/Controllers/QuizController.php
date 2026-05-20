@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\QuizStatus;
 use App\Http\Requests\StoreQuizRequest;
-use App\Models\Concept;
 use App\Models\Domain;
 use App\Models\Quiz;
 use App\Services\AiService;
@@ -41,12 +40,21 @@ class QuizController extends Controller
     {
         $domain = $request->user()->domains()->findOrFail($request->domain_id);
         $conceptIds = $request->concept_ids;
-        $concepts = Concept::whereIn('id', $conceptIds)->get();
+        $concepts = $domain->concepts()->whereIn('id', $conceptIds)->get();
+
+        if ($concepts->isEmpty()) {
+            return back()->with('error', 'No valid concepts found for this quiz.');
+        }
 
         $questionCount = min(max(count($concepts) * config('quiz.questions.per_concept'), config('quiz.questions.min_per_quiz')), config('quiz.questions.max_per_quiz'));
         $timeLimit = max(round($questionCount * config('quiz.timer.minutes_per_question')), config('quiz.timer.min_minutes'));
 
-        $questions = $this->ai->generateQuizQuestions($domain, $concepts, $questionCount);
+        try {
+            $questions = $this->ai->generateQuizQuestions($domain, $concepts, $questionCount);
+        } catch (\Exception $e) {
+            Log::warning('QuizController::store - AI generation failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to generate quiz questions. Please try again.');
+        }
 
         $quiz = DB::transaction(function () use ($domain, $timeLimit, $questions, $concepts) {
             $quiz = Auth::user()->quizzes()->create([
@@ -79,9 +87,7 @@ class QuizController extends Controller
 
     public function destroy(Quiz $quiz)
     {
-        if ($quiz->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $quiz);
 
         $domain = $quiz->domain;
 
@@ -92,9 +98,7 @@ class QuizController extends Controller
 
     public function byDomain(Domain $domain)
     {
-        if ($domain->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('view', $domain);
 
         $domain->load('concepts');
 
@@ -108,9 +112,7 @@ class QuizController extends Controller
 
     public function domainHistory(Domain $domain)
     {
-        if ($domain->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('view', $domain);
 
         $quizzes = Auth::user()->quizzes()
             ->where('domain_id', $domain->id)
@@ -124,8 +126,10 @@ class QuizController extends Controller
 
     public function active(Domain $domain, Quiz $quiz)
     {
-        if ($quiz->user_id !== Auth::id() || $quiz->domain_id !== $domain->id) {
-            abort(403);
+        $this->authorize('view', $quiz);
+
+        if ($quiz->domain_id !== $domain->id) {
+            abort(404);
         }
 
         if ($quiz->status !== QuizStatus::InProgress || $quiz->passed) {
@@ -142,9 +146,7 @@ class QuizController extends Controller
 
     public function update(Request $request, Quiz $quiz)
     {
-        if ($quiz->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $quiz);
 
         if ($quiz->status !== QuizStatus::InProgress) {
             return redirect()->route('quizzes.results', $quiz);
@@ -334,9 +336,7 @@ class QuizController extends Controller
 
     public function results(Quiz $quiz)
     {
-        if ($quiz->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('view', $quiz);
 
         $quiz->load(['questions' => fn ($q) => $q->orderBy('sort_order'), 'questions.concept', 'domain']);
         $domainName = session('quiz_domain_' . $quiz->id, $quiz->domain->name);

@@ -18,6 +18,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                return back()->with('error', $e->getMessage() ?: 'An error occurred.');
+            }
+
+            if (!config('app.debug')) {
+                return back()->with('error', 'An unexpected error occurred. Please try again.');
+            }
+        });
     })
     ->create();

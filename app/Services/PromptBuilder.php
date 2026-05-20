@@ -84,7 +84,7 @@ class PromptBuilder
 
     protected function buildGenerateQuestionsUserPrompt(Concept $concept, ?User $user = null): string
     {
-        $hasDomain = (bool) $concept->domain;
+        $hasDomain = $concept->relationLoaded('domain') ? (bool) $concept->domain : $concept->domain_id !== null;
         $domainContext = $hasDomain ? "Domain: {$concept->domain->name}" : '(No domain specified)';
         $domainDescription = ($hasDomain && $concept->domain->description) ? "\nDomain Description: {$concept->domain->description}" : '';
 
@@ -126,7 +126,7 @@ class PromptBuilder
             'tier' => $concept->getHighestUnlockedTier(),
         ]);
 
-        $hasDomain = (bool) $concept->domain;
+        $hasDomain = $concept->relationLoaded('domain') ? (bool) $concept->domain : $concept->domain_id !== null;
 
         return [
             ['role' => 'system', 'content' => $this->buildGenerateQuestionsSystemPrompt($hasDomain)],

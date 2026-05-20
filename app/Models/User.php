@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 #[Fillable(['name', 'email', 'password', 'status', 'specialization', 'experience_years', 'tech_stack', 'interview_goal', 'onboarding_completed'])]
 #[Hidden(['password', 'remember_token'])]
@@ -34,12 +35,19 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::deleting(function (User $user) {
-            $domainIds = $user->domains()->pluck('id');
-            $conceptIds = Concept::whereIn('domain_id', $domainIds)->pluck('id');
-            GeneratedQuestion::whereIn('concept_id', $conceptIds)->delete();
-            Concept::whereIn('domain_id', $domainIds)->delete();
-            $user->domains()->delete();
-            $user->quizzes()->delete();
+            try {
+                DB::beginTransaction();
+                $domainIds = $user->domains()->pluck('id');
+                $conceptIds = Concept::whereIn('domain_id', $domainIds)->pluck('id');
+                GeneratedQuestion::whereIn('concept_id', $conceptIds)->delete();
+                Concept::whereIn('domain_id', $domainIds)->delete();
+                $user->domains()->delete();
+                $user->quizzes()->delete();
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
         });
     }
 
